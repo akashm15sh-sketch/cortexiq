@@ -1,0 +1,24 @@
+# Virtual Environment
+venv/
+
+# Environment Variables
+.env
+
+# Data
+data/uploads/*
+data/cortexiq.db
+!data/uploads/.gitkeep
+.gradio/
+
+# Results (generated)
+results/*
+!results/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# OS
+.DS_Store

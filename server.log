@@ -1,0 +1,111 @@
+INFO:     Will watch for changes in these directories: ['/home/akashhalder/.gemini/antigravity/scratch/cortexiq-eeg']
+INFO:     Uvicorn running on http://0.0.0.0:7860 (Press CTRL+C to quit)
+INFO:     Started reloader process [11140] using WatchFiles
+INFO:     Started server process [11152]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:50532 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50532 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50532 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50532 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50538 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60358 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:46622 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:48108 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:50882 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:58004 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58004 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58004 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34674 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34674 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34674 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34676 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34676 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34676 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57752 - "POST /api/study/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36126 - "POST /api/study/create HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50948 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50948 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50948 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50948 - "GET /api/user/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50956 - "POST /api/study/load/32 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50956 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43172 - "POST /api/study/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:43172 - "DELETE /api/study/subject/0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35888 - "POST /api/study/upload HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35896 - "DELETE /api/study/subject/0 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39088 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39088 - "GET /static/montage_data.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:39094 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39094 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39094 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39094 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39094 - "GET /static/montage_data.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:51816 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51816 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51816 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35296 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35296 - "GET /static/montage_data.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58324 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58324 - "GET /static/montage_data.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58336 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58336 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58336 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58336 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58336 - "GET /static/montage_data.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:47502 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47502 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47502 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56610 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56610 - "GET /static/montage_data.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:58560 - "POST /api/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58560 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58560 - "GET /api/study/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58570 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58570 - "GET /static/montage_data.js HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40060 - "GET /final_coords.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:40060 - "GET /static/final_coords.json HTTP/1.1" 404 Not Found
+WARNING:  WatchFiles detected changes in 'app.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [11152]
+INFO:     Started server process [18069]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:34628 - "POST /api/study/upload HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33634 - "POST /api/study/upload HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:33634 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33634 - "GET /static/montage_data.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57380 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57380 - "GET /static/montage_data.js HTTP/1.1" 304 Not Modified
+WARNING:  WatchFiles detected changes in 'cortexiq/utils/email.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18069]
+WARNING:  WatchFiles detected changes in 'cortexiq/utils/email.py'. Reloading...
+INFO:     Started server process [29814]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [29814]
+INFO:     Started server process [29909]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'app.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [29909]
+WARNING:  WatchFiles detected changes in 'test_otp.py'. Reloading...
+INFO:     Started server process [30055]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+WARNING:  WatchFiles detected changes in 'test_otp.py'. Reloading...
+INFO:     Started server process [30097]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
