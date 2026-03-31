@@ -57,5 +57,16 @@ class AnalysisJob(Base):
     completed_at = Column(DateTime, nullable=True)
 
 
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True)
+    study_id = Column(Integer, nullable=False)
+    user_id = Column(Integer, nullable=True)
+    role = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    model = Column(String, default="claude")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 def init_db():
     Base.metadata.create_all(engine)

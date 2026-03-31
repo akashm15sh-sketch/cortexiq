@@ -82,6 +82,36 @@ class EEGLoader:
         if sfreq is None:
             sfreq = 256.0  # Default
 
+        # Detect if column names are numeric (CSV has no header — first data row used as header)
+        all_numeric_headers = all(
+            self._is_numeric_str(str(c)) for c in df.columns
+        )
+        if all_numeric_headers:
+            # Reload without header, prepend the "header" row back as data
+            df_no_header = pd.read_csv(filepath, sep=sep, header=None)
+            # Check if first row looks like a time column
+            first_col = str(df_no_header.iloc[0, 0]).lower().strip()
+            if first_col in ("time", "timestamp", "sample", "index", ""):
+                df_no_header = df_no_header.iloc[1:]  # Skip time label row
+            else:
+                # The header row is actually data — keep it
+                pass
+            df_no_header = df_no_header.apply(pd.to_numeric, errors="coerce")
+            df_no_header = df_no_header.dropna(axis=1, how="all")
+            n_cols = len(df_no_header.columns)
+            # Drop first column if it looks like time/index
+            if n_cols > 1:
+                first_vals = df_no_header.iloc[:5, 0].values
+                is_time = all(
+                    isinstance(v, (int, float)) and (i == 0 or v > first_vals[i-1])
+                    for i, v in enumerate(first_vals) if not np.isnan(v)
+                )
+                if is_time and n_cols > 2:
+                    df_no_header = df_no_header.iloc[:, 1:]
+                    n_cols -= 1
+            df = df_no_header.reset_index(drop=True)
+            df.columns = [f"Ch{i+1}" for i in range(len(df.columns))]
+
         # Detect EEG columns
         eeg_cols = []
         other_cols = []
@@ -111,6 +141,15 @@ class EEGLoader:
         ch_types = ["eeg"] * len(use_cols)
         info = mne.create_info(ch_names=use_cols, sfreq=sfreq, ch_types=ch_types)
         return mne.io.RawArray(data, info, verbose=False)
+
+    @staticmethod
+    def _is_numeric_str(s: str) -> bool:
+        """Check if a string represents a number."""
+        try:
+            float(s)
+            return True
+        except (ValueError, TypeError):
+            return False
 
     def _load_numpy(self, filepath: str, sfreq: float = None) -> mne.io.RawArray:
         """Load numpy array into MNE RawArray."""

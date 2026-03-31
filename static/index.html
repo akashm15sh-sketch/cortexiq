@@ -1005,13 +1005,14 @@
                     <div style="display:flex;gap:8px;padding:16px;border-top:1px solid var(--border);flex-shrink:0;align-items:center;">
                         <select id="chat-model" style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;flex-shrink:0;">
                             <option value="claude">Claude (Anthropic)</option>
-                            <option value="kilo-claude">Claude (Kilo)</option>
-                            <option value="kilo-gpt4o">GPT-4o (Kilo)</option>
-                            <option value="kilo-gemini">Gemini (Kilo)</option>
+                            <option value="kilo-claude" disabled>&#x1f6a7; Claude (Kilo) — Under Construction</option>
+                            <option value="kilo-gpt4o" disabled>&#x1f6a7; GPT-4o (Kilo) — Under Construction</option>
+                            <option value="kilo-gemini" disabled>&#x1f6a7; Gemini (Kilo) — Under Construction</option>
                         </select>
                         <input class="input" id="chat-in" placeholder="Ask AI to process data..."
                             onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;">
-                        <button class="btn btn-primary" onclick="sendChat()">Send</button>
+                        <button class="btn btn-primary" id="btn-send" onclick="sendChat()">Send</button>
+                        <button class="btn btn-outline hidden" id="btn-stop" onclick="stopChat()" style="color:var(--red);border-color:var(--red);padding:10px 14px;">Stop</button>
                     </div>
                 </div>
                 <div id="ana-resize-handle" class="hidden"
@@ -1177,11 +1178,13 @@
     <script>
         let TOKEN = localStorage.getItem('token') || sessionStorage.getItem('token');
         let USER = null; let regEmail = ''; let poller = null;
+        let chatAbortController = null;
         const $ = id => document.getElementById(id);
 
-        async function req(m, u, b = null) {
+        async function req(m, u, b = null, signal = null) {
             const o = { method: m, headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' } };
             if (b) o.body = JSON.stringify(b);
+            if (signal) o.signal = signal;
             const r = await fetch(u, o);
             if (r.status === 401) { logout(); throw new Error('Session expired'); }
             const d = await r.json();
@@ -1355,17 +1358,57 @@
 
                     // Auto-set UI to 'new' (or 'saved' if we tracked it) to show the form
                     setStudyMode('new', true);
+
+                    // Restore chat history and switch to analysis tab
+                    await restoreChat();
+                    tab('analysis');
                 }
             } catch (e) { console.warn("Session recovery failed", e); }
         }
 
-        function setStudyMode(m, silent = false) {
+        async function setStudyMode(m, silent = false) {
             const h = $('study-panel-header');
             const panel = h.closest('.panel');
 
             if (m === 'new') {
                 h.innerHTML = `Create New Study <span class="badge" style="background:var(--accent-glow);color:var(--accent);margin-left:8px;font-size:9px;">NEW</span>`;
                 panel.style.borderTop = "2px solid var(--accent)";
+
+                // Clear all old data when switching to "Create New" (but not during silent session recovery)
+                if (!silent) {
+                    try { await req('DELETE', '/api/study/subjects/clear'); } catch (e) { }
+                    try { await req('POST', '/api/ai/chat/clear'); } catch (e) { }
+                    uploadedSubjects = [];
+                    studyReady = false;
+                    plotDataState.subjectId = null;
+                    renderSubjectList();
+                    $('plot-prev').innerHTML = 'Waiting for data...';
+                    $('plot-nav').classList.add('hidden');
+                    $('plot-range-label').textContent = '';
+                    $('info-prev').textContent = 'No file loaded.';
+                    $('up-txt').textContent = 'Select Files (Support Multiple)';
+                    $('up-status').innerHTML = '';
+                    $('ana-pipe-panel').classList.add('hidden');
+                    $('ana-resize-handle').classList.add('hidden');
+                    $('ana-chat-panel').style.flex = '';
+                    $('ana-chat-panel').style.width = '';
+                    $('ana-header').classList.add('hidden');
+                    $('chat').innerHTML = '<div class="msg bot">Ready for analysis. Upload multiple files, and I\'ll help you process them all.</div>';
+                    $('s-name').value = '';
+                    $('s-cond').value = '';
+                    $('s-notes').value = '';
+                    $('s-count').value = '1';
+                    $('s-sfreq').value = '256';
+                    $('s-ref').value = 'average';
+                    $('sub-list-container').classList.add('hidden');
+                    $('study-form-container').classList.add('hidden');
+                    $('subj-sel-container').classList.add('hidden');
+                    selectedMontage = [];
+                    renderMontage();
+                    renderMappingList();
+                    const btn = $('btn-init');
+                    if (btn) btn.disabled = true;
+                }
             } else if (m === 'saved') {
                 h.innerHTML = `Load Saved Study <span class="badge" style="background:var(--border);color:var(--dim);margin-left:8px;font-size:9px;">HISTORY</span>`;
                 panel.style.borderTop = "2px solid var(--border)";
@@ -1385,16 +1428,31 @@
                 let l = '';
                 if (!h.studies.length) l = '<div style="font-size:11px;color:var(--dim);text-align:center;padding:12px;">No saved studies yet.</div>';
                 else h.studies.forEach(s => l += `
-                    <div class="study-item" onclick="loadSavedStudy(${s.id})" style="padding:10px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
+                    <div class="study-item" style="padding:10px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                        <div onclick="loadSavedStudy(${s.id})" style="flex:1;">
                             <div style="font-weight:600; font-size:13px;">${s.name}</div>
                             <div style="font-size:10px; color:var(--dim);">${s.modality} • ${s.subject_count} subjects</div>
                         </div>
-                        <div style="font-size:10px; color:var(--dim);">${new Date(s.created_at).toLocaleDateString()}</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="font-size:10px; color:var(--dim);">${new Date(s.created_at).toLocaleDateString()}</div>
+                            <button onclick="deleteStudy(${s.id})" style="background:var(--red);color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;">Delete</button>
+                        </div>
                     </div>
                 `);
                 $('saved-list').innerHTML = l;
             } catch (e) { }
+        }
+
+        async function deleteStudy(id) {
+            console.log('deleteStudy called for id:', id);
+            if (!confirm("Delete this study and all its chat history? This cannot be undone.")) return;
+            try {
+                await req('DELETE', `/api/study/delete/${id}`);
+                loadHistory();
+            } catch (e) {
+                console.error('deleteStudy failed:', e);
+                alert('Failed to delete study: ' + e.message);
+            }
         }
 
         async function loadSavedStudy(id) {
@@ -1403,12 +1461,14 @@
                 await loadSession();
                 updateAnaHeader(res.study);
 
-                // Explicitly unhide form and subjects list
                 $('sub-list-container').classList.remove('hidden');
                 $('study-form-container').classList.remove('hidden');
 
-                // Transition message
                 $('up-status').innerHTML = `<div class="alert alert-success" style="padding:10px;">✓ Study "${res.study.name}" loaded. Review details and click "Initialize Analysis" to proceed.</div>`;
+
+                // Restore chat history and switch to analysis tab
+                await restoreChat();
+                tab('analysis');
             } catch (e) { alert(e.message); }
         }
 
@@ -1498,9 +1558,12 @@
         }
 
         async function clearStudy() {
+            console.log('clearStudy called');
             if (!confirm("Clear overall study workspace? All uploaded subjects will be removed from this session.")) return;
             try {
+                console.log('Calling clear subjects API...');
                 await req('DELETE', '/api/study/subjects/clear');
+                console.log('Clear subjects API succeeded');
                 uploadedSubjects = [];
                 studyReady = false;
                 plotDataState.subjectId = null;
@@ -1515,7 +1578,20 @@
                 $('ana-resize-handle').classList.add('hidden');
                 $('ana-chat-panel').style.flex = '';
                 $('ana-chat-panel').style.width = '';
-            } catch (e) { alert(e.message); }
+                $('ana-header').classList.add('hidden');
+                $('chat').innerHTML = '';
+                $('s-name').value = '';
+                $('s-cond').value = '';
+                $('s-notes').value = '';
+                $('sub-list-container').classList.add('hidden');
+                $('study-form-container').classList.add('hidden');
+                $('subj-sel-container').classList.add('hidden');
+                req('POST', '/api/ai/chat/clear').catch(e => console.warn(e));
+                console.log('clearStudy completed successfully');
+            } catch (e) {
+                console.error('clearStudy failed:', e);
+                alert('Failed to clear study: ' + e.message);
+            }
         }
 
         let selectedMontage = [];
@@ -1798,6 +1874,10 @@
                 $('up-status').innerHTML = `<div class="alert alert-success">✓ Study "${d.name}" context saved (ID: ${d.study_id})</div>`;
                 studyReady = true;
 
+                // Clear chat for new study
+                $('chat').innerHTML = '';
+                req('POST', '/api/ai/chat/clear').catch(e => console.warn(e));
+
                 // Update header context
                 updateAnaHeader({
                     name: body.name,
@@ -1808,11 +1888,40 @@
 
                 if (initAnalysis) tab('analysis');
             }
-            catch (e) { alert(e.message); }
+            catch (e) {
+                if (e.message && e.message.includes('No files uploaded')) {
+                    $('up-status').innerHTML = `<div class="alert alert-error" style="color:var(--red);padding:10px;">Please upload EEG files first before initializing analysis.</div>`;
+                } else {
+                    $('up-status').innerHTML = `<div class="alert alert-error" style="color:var(--red);padding:10px;">${e.message}</div>`;
+                }
+            }
+        }
+
+        async function restoreChat() {
+            try {
+                const res = await req('GET', '/api/ai/chat/history');
+                if (res.messages && res.messages.length) {
+                    $('chat').innerHTML = '';
+                    res.messages.forEach(m => msg(m.role === 'assistant' ? 'bot' : 'user', m.content));
+                }
+                // Restore pipeline panel if there are pending steps
+                if (res.pending_steps && res.pending_steps.length > 0) {
+                    showPipe(res.pending_steps);
+                }
+            } catch (e) {
+                console.warn('Failed to restore chat history:', e);
+            }
         }
 
         async function sendChat() {
             const text = $('chat-in').value.trim(); if (!text) return;
+            const model = $('chat-model') ? $('chat-model').value : 'claude';
+
+            if (model.startsWith('kilo-')) {
+                msg('bot', 'Kilo models are currently under construction. Please use Claude (Anthropic) for now.');
+                return;
+            }
+
             $('chat-in').value = ''; msg('user', text);
 
             if (!studyReady) {
@@ -1820,24 +1929,46 @@
                 return;
             }
 
-            $('thinking').classList.remove('hidden'); // Show thinking
-            try {
-                const model = $('chat-model') ? $('chat-model').value : 'claude';
-                const res = await req('POST', '/api/ai/chat', { message: text, model: model });
-                $('thinking').classList.add('hidden'); // Hide thinking
+            // Show thinking + stop button, hide send button
+            $('thinking').classList.remove('hidden');
+            $('btn-send').classList.add('hidden');
+            $('btn-stop').classList.remove('hidden');
+            chatAbortController = new AbortController();
 
-                if (res.type === 'answer' || res.type === 'interpretation') msg('bot', res.message);
-                else if (res.type === 'clarification' || res.type === 'refusal') msg('bot', res.message || res.clarification_question || 'Please clarify your request.');
-                else if (res.type === 'pipeline') {
-                    msg('bot', res.understanding || 'Generated processing pipeline.');
-                    tab('analysis');
-                    showPipe(res.pipeline_steps);
+            try {
+                const res = await req('POST', '/api/ai/chat', { message: text, model: model }, chatAbortController.signal);
+
+                if (res.type === 'pipeline') {
+                    const steps = res.pipeline_steps || [];
+                    const displayMsg = res.message || res.understanding || 'Pipeline generated.';
+                    msg('bot', displayMsg);
+                    if (steps.length > 0) {
+                        tab('analysis');
+                        showPipe(steps);
+                    } else {
+                        msg('bot', 'Pipeline response received but no steps were generated. Please try rephrasing your request.');
+                    }
                 }
+                else if (res.type === 'answer' || res.type === 'interpretation') msg('bot', res.message);
+                else if (res.type === 'clarification' || res.type === 'refusal') msg('bot', res.message || res.clarification_question || 'Please clarify your request.');
                 else if (res.type === 'error') msg('bot', 'Error: ' + res.message);
                 else msg('bot', res.message || JSON.stringify(res));
             } catch (e) {
+                if (e.name === 'AbortError') {
+                    msg('bot', 'Request stopped.');
+                } else {
+                    msg('bot', 'Error: ' + e.message);
+                }
+            } finally {
                 $('thinking').classList.add('hidden');
-                msg('bot', 'Error: ' + e.message);
+                $('btn-send').classList.remove('hidden');
+                $('btn-stop').classList.add('hidden');
+                chatAbortController = null;
+            }
+        }
+        function stopChat() {
+            if (chatAbortController) {
+                chatAbortController.abort();
             }
         }
         function msg(r, t) {
@@ -1879,6 +2010,10 @@
         }
 
         function showPipe(s) {
+            if (!s || !Array.isArray(s) || s.length === 0) {
+                console.warn('showPipe called with invalid steps:', s);
+                return;
+            }
             pipelineStepsData = s; // Save for code access
             $('ana-pipe-panel').classList.remove('hidden');
             $('ana-resize-handle').classList.remove('hidden');
@@ -1934,7 +2069,13 @@
                 $('btn-pipe-pause').classList.remove('hidden');
                 $('btn-pipe-stop').classList.remove('hidden');
                 startPolling();
-            } catch (e) { alert(e.message); }
+            } catch (e) {
+                if (e.message && (e.message.includes('No EEG data') || e.message.includes('No pipeline'))) {
+                    msg('bot', e.message + ' Please upload your EEG files and ask me to generate a pipeline.');
+                } else {
+                    alert('Pipeline error: ' + e.message);
+                }
+            }
         }
 
         async function pausePipe() {

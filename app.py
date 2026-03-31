@@ -9,6 +9,22 @@ import numpy as np
 from datetime import datetime
 from typing import Optional, Dict, List
 
+def _sanitize(obj):
+    """Recursively convert numpy types to Python native types for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_sanitize(v) for v in obj]
+    elif isinstance(obj, (np.integer,)):
+        return int(obj)
+    elif isinstance(obj, (np.floating,)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
+    return obj
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -22,7 +38,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from cortexiq.database import init_db, SessionLocal, User, Study, AnalysisJob
+from cortexiq.database import init_db, SessionLocal, User, Study, AnalysisJob, ChatMessage
 from cortexiq.config import UPLOAD_DIR, RESULTS_DIR
 from cortexiq.auth.jwt_handler import create_token, verify_token
 from cortexiq.ai.interpreter import CortexIQInterpreter
@@ -439,6 +455,31 @@ async def clear_subjects(user: dict = Depends(get_current_user)):
     session.pop("study_id", None)
     return {"message": "All subjects cleared"}
 
+@app.delete("/api/study/delete/{study_id}")
+async def delete_study(study_id: int, user: dict = Depends(get_current_user)):
+    uid = int(user["sub"]); session = get_user_session(uid)
+    db = SessionLocal()
+    try:
+        study = db.query(Study).filter(Study.id == study_id, Study.user_id == uid).first()
+        if not study:
+            raise HTTPException(status_code=404, detail="Study not found")
+        # Delete associated chat messages
+        db.query(ChatMessage).filter(ChatMessage.study_id == study_id, ChatMessage.user_id == uid).delete()
+        # Delete associated analysis jobs
+        db.query(AnalysisJob).filter(AnalysisJob.study_id == study_id).delete()
+        # Delete the study
+        db.delete(study)
+        db.commit()
+        # Clear session if this was the active study
+        if session.get("study_id") == study_id:
+            session["subjects"] = []
+            session.pop("study_ctx", None)
+            session.pop("study_id", None)
+            session["chat_history"] = []
+        return {"message": "Study deleted"}
+    finally:
+        db.close()
+
 @app.post("/api/ai/chat")
 async def ai_chat(req: ChatRequest, user: dict = Depends(get_current_user)):
     uid = int(user["sub"]); session = get_user_session(uid)
@@ -503,22 +544,133 @@ async def ai_chat(req: ChatRequest, user: dict = Depends(get_current_user)):
             pass
 
     response = ai_interpreter.interpret(req.message, ctx, session["chat_history"], model=req.model)
+
+    # DEBUG: Log response type and pipeline info
+    rtype = response.get("type", "unknown")
+    nsteps = len(response.get("pipeline_steps", []))
+    print(f"[AI DEBUG] type={rtype}, steps={nsteps}, has_message={bool(response.get('message'))}", flush=True)
+    if rtype != "pipeline":
+        print(f"[AI DEBUG] Non-pipeline response preview: {str(response)[:300]}", flush=True)
+
+    # Store in chat history - use message/understanding for the text content
+    assistant_content = response.get("message", response.get("understanding", ""))
     session["chat_history"].append({"role": "user", "content": req.message})
-    session["chat_history"].append({"role": "assistant", "content": response.get("message", response.get("understanding", ""))})
-    if response.get("type") == "pipeline": session["pending_steps"] = response.get("pipeline_steps", [])
+    session["chat_history"].append({"role": "assistant", "content": assistant_content})
+
+    # Update pending pipeline steps if pipeline response and data exists
+    if response.get("type") == "pipeline":
+        steps = response.get("pipeline_steps", [])
+        if steps and session.get("subjects"):
+            session["pending_steps"] = steps
+        elif steps and not session.get("subjects"):
+            # Pipeline generated but no data — warn user instead of storing unusable steps
+            response["message"] = (response.get("message", "") + " (Please upload EEG files first so I can run this pipeline.)").strip()
+            session["pending_steps"] = []
+
+    # Persist to DB
+    study_id = session.get("study_id")
+    if study_id:
+        db = SessionLocal()
+        try:
+            db.add(ChatMessage(study_id=study_id, user_id=uid, role="user", content=req.message, model=req.model))
+            db.add(ChatMessage(study_id=study_id, user_id=uid, role="assistant", content=assistant_content, model=req.model))
+            db.commit()
+        except Exception:
+            db.rollback()
+        finally:
+            db.close()
+
+    # Include pending_steps in response so frontend always has them
+    if response.get("type") == "pipeline" and session.get("pending_steps"):
+        response["pipeline_steps"] = session["pending_steps"]
+
     return response
+
+
+@app.get("/api/ai/chat/history")
+async def get_chat_history(user: dict = Depends(get_current_user)):
+    uid = int(user["sub"]); session = get_user_session(uid)
+    study_id = session.get("study_id")
+    if not study_id:
+        return {"messages": [], "pending_steps": []}
+    db = SessionLocal()
+    try:
+        msgs = (
+            db.query(ChatMessage)
+            .filter(ChatMessage.study_id == study_id, ChatMessage.user_id == uid)
+            .order_by(ChatMessage.created_at)
+            .all()
+        )
+        result = [{"role": m.role, "content": m.content, "model": m.model} for m in msgs]
+        session["chat_history"] = result
+        return {"messages": result, "pending_steps": session.get("pending_steps", [])}
+    finally:
+        db.close()
+
+
+@app.post("/api/ai/chat/clear")
+async def clear_chat_history(user: dict = Depends(get_current_user)):
+    uid = int(user["sub"]); session = get_user_session(uid)
+    study_id = session.get("study_id")
+    if not study_id:
+        return {"message": "No study active"}
+    db = SessionLocal()
+    try:
+        db.query(ChatMessage).filter(ChatMessage.study_id == study_id, ChatMessage.user_id == uid).delete()
+        db.commit()
+        session["chat_history"] = []
+        return {"message": "Chat history cleared"}
+    finally:
+        db.close()
 
 
 @app.post("/api/pipeline/run")
 async def pipeline_run(user: dict = Depends(get_current_user)):
     uid = int(user["sub"]); session = get_user_session(uid)
-    subjects, steps = session.get("subjects"), session.get("pending_steps")
-    if not subjects or not steps: raise HTTPException(status_code=400, detail="No data or pipeline.")
+    subjects = session.get("subjects")
+    steps = session.get("pending_steps")
+    
+    if not subjects:
+        raise HTTPException(status_code=400, detail="No EEG data loaded. Please upload files and create a study first.")
+    if not steps:
+        raise HTTPException(status_code=400, detail="No pipeline steps available. Ask the AI assistant to generate a pipeline first.")
     
     pipeline = get_user_pipeline(uid)
-    # Reset pipeline for fresh run
     pipeline.reset()
-    raw = subjects[0]["raw"]
+    raw = subjects[0]["raw"].copy()
+
+    # Apply user-selected montage from study context
+    montage_names = session.get("study_ctx", {}).get("montage", [])
+    if montage_names:
+        try:
+            import mne
+
+            # Step 1: If user mapped channel slots to electrode names, rename raw channels
+            ch_names = list(raw.ch_names)
+            rename_map = {}
+            for i, mont_name in enumerate(montage_names):
+                if i < len(ch_names) and mont_name and mont_name.strip():
+                    new_name = mont_name.strip()
+                    if ch_names[i] != new_name:
+                        rename_map[ch_names[i]] = new_name
+            if rename_map:
+                raw.rename_channels(rename_map)
+                print(f"[MONTAGE] Renamed {len(rename_map)} channels: {rename_map}", flush=True)
+
+            # Step 2: Try to apply a standard montage to get electrode positions
+            for montage_name in ["standard_1005", "standard_1020", "standard_1010"]:
+                try:
+                    std_montage = mne.channels.make_standard_montage(montage_name)
+                    raw.set_montage(std_montage, on_missing="warn", match_case=True)
+                    n_with_pos = sum(1 for ch in raw.info["chs"] if ch.get("loc") is not None and any(ch["loc"][:3]))
+                    print(f"[MONTAGE] Applied {montage_name}: {n_with_pos}/{len(raw.ch_names)} channels have positions", flush=True)
+                    break
+                except Exception as e:
+                    print(f"[MONTAGE] {montage_name} failed: {e}", flush=True)
+                    continue
+        except Exception as e:
+            print(f"[MONTAGE] Warning: Could not apply montage: {e}", flush=True)
+
     pipeline.run(steps, raw)
     return {"status": "started", "n_steps": len(steps)}
 
@@ -528,12 +680,12 @@ async def pipeline_status(user: dict = Depends(get_current_user)):
     uid = int(user["sub"])
     pipeline = get_user_pipeline(uid)
     results = pipeline.get_results_summary()
-    return {
+    return _sanitize({
         "status": pipeline.status, "current_step": pipeline.current_step, "total_steps": len(pipeline.steps),
         "steps": [{"index": i, "name": s.get("name", "Step"), "step_status": results["steps"].get(i, {}).get("status", "pending")} for i, s in enumerate(pipeline.steps)],
         "log": results.get("log", []),
         "band_powers": results.get("band_powers", {}), "figures": {k: os.path.basename(v) for k, v in results.get("figures", {}).items()},
-    }
+    })
 
 @app.post("/api/pipeline/pause")
 async def pipeline_pause(user: dict = Depends(get_current_user)):
@@ -582,11 +734,17 @@ async def generate_results(user: dict = Depends(get_current_user)):
     uid = int(user["sub"]); session = get_user_session(uid)
     subjects = session.get("subjects", [])
     if not subjects:
-        raise HTTPException(status_code=400, detail="No subjects loaded. Please upload data first.")
+        raise HTTPException(status_code=400, detail="No subjects loaded. Please upload EEG data first.")
     
     pipeline = get_user_pipeline(uid)
-    if pipeline.status not in ("complete", "stopped", "failed") and not pipeline.step_outputs and not pipeline.results:
-        raise HTTPException(status_code=400, detail="No pipeline results available. Please run the analysis pipeline first.")
+    # Check if pipeline has any results (band powers, erp peaks, or completed steps)
+    has_results = (
+        pipeline.results.get("band_powers") or 
+        pipeline.results.get("erp_peak") or 
+        pipeline.step_outputs
+    )
+    if not has_results:
+        raise HTTPException(status_code=400, detail="No analysis results available. Please run the pipeline first.")
     
     info = subjects[0]["info"]; ctx = session.get("study_ctx", {})
     results = pipeline.get_results_summary()
@@ -601,16 +759,19 @@ async def generate_results(user: dict = Depends(get_current_user)):
         "subject_count": ctx.get("n_subjects", len(subjects)),
     }
 
-    # Fast local interpretation (no AI API call)
+    # Use local interpretation (no AI calls to avoid image errors)
     interp = _build_local_interpretation(statistics, study_info)
     methods = _build_local_methods(pipeline.steps, study_info)
 
-    # Generate report files (CSV/PDF/ZIP) — this is fast with stats pre-computed
-    zip_p, pdf_p, csv_p = eeg_reporter.generate(study_info, results, pipeline.figures, interp, methods)
+    # Generate report files
+    try:
+        zip_p, pdf_p, csv_p = eeg_reporter.generate(study_info, results, pipeline.figures, interp, methods)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
     
     band_powers = results.get("band_powers", {})
     erp_peak = results.get("erp_peak", {})
-    figures = {k: os.path.basename(v) for k, v in pipeline.figures.items()}
+    figures = {k: os.path.basename(v) for k, v in pipeline.figures.items() if v and os.path.exists(v)}
     
     step_summaries = []
     for step_id, step_data in results.get("steps", {}).items():
@@ -622,7 +783,7 @@ async def generate_results(user: dict = Depends(get_current_user)):
                 "summary": step_data.get("summary", ""),
             })
     
-    return {
+    return _sanitize({
         "interpretation": interp,
         "methods": methods,
         "band_powers": band_powers,
@@ -636,7 +797,7 @@ async def generate_results(user: dict = Depends(get_current_user)):
             "csv": os.path.basename(csv_p),
         },
         "study_info": study_info,
-    }
+    })
 
 
 def _build_local_interpretation(statistics: dict, study_info: dict) -> str:
