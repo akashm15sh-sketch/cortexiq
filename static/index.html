@@ -748,8 +748,6 @@
     <div class="topbar">
         <div class="logo">CortexIQ</div>
         <div class="topbar-right">
-            <span id="user-count" class="hidden" style="margin-right:12px;"><span class="badge"
-                    id="user-val">1/10</span> users</span>
             <span id="user-name" style="margin-right:12px;font-weight:600;font-size:13px;"></span>
             <button class="btn btn-outline btn-sm hidden" id="settings-top-btn" onclick="tab('settings')"
                 style="padding:4px 10px;font-size:11px;">Settings</button>
@@ -1272,8 +1270,6 @@
                 $('app-container').classList.add('active');
                 $('app-container').style.display = 'flex';
                 $('user-name').textContent = USER.username;
-                $('user-count').classList.remove('hidden');
-                $('user-val').textContent = `${USER.login_count}/10`;
 
                 // Update visibility of topbar buttons - using IDs from the refactor
                 const settingsBtn = $('settings-top-btn');
