@@ -446,11 +446,13 @@ class CortexIQInterpreter:
 Study: {study_context.get('conditions', 'EEG recording')}
 Respond with ONLY the interpretation text, no JSON."""
         try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514", max_tokens=500,
+            model_id = MODEL_MAP["claude"]["model"]
+            return self._call_anthropic(
                 messages=[{"role": "user", "content": prompt}],
+                system="You are a neuroscience expert. Respond with plain text only, no JSON.",
+                model=model_id,
+                max_tokens=500,
             )
-            return response.content[0].text.strip()
         except Exception as e:
             return f"Interpretation generation failed: {str(e)}"
 
@@ -466,10 +468,12 @@ Channels: {study_context.get('n_channels', 'N/A')}
 Sampling rate: {study_context.get('sfreq', 'N/A')} Hz
 Write in past tense, formal scientific style. Respond with ONLY the methods text, no JSON."""
         try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514", max_tokens=500,
+            model_id = MODEL_MAP["claude"]["model"]
+            return self._call_anthropic(
                 messages=[{"role": "user", "content": prompt}],
+                system="You are a scientific writer. Respond with plain text only, no JSON.",
+                model=model_id,
+                max_tokens=500,
             )
-            return response.content[0].text.strip()
         except Exception as e:
             return f"Methods generation failed: {str(e)}"

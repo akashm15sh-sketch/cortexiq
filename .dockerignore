@@ -1,0 +1,16 @@
+venv/
+.env
+data/uploads/*
+data/cortexiq.db
+results/*
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.DS_Store
+.git
+.gitignore
+server.log
+*.md
+.agent/
+.gemini/

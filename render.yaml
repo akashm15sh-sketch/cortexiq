@@ -1,0 +1,30 @@
+# render.yaml — Render Blueprint (Infrastructure as Code)
+# Deploy: https://render.com/deploy → select your GitHub repo
+
+services:
+  - type: web
+    name: cortexiq
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false  # Must be set manually in dashboard
+      - key: KILO_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_PASS
+        sync: false
+      - key: DEBUG
+        value: "false"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    disk:
+      name: cortexiq-data
+      mountPath: /app/data
+      sizeGB: 1

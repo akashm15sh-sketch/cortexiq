@@ -637,7 +637,10 @@ async def pipeline_run(user: dict = Depends(get_current_user)):
     
     pipeline = get_user_pipeline(uid)
     pipeline.reset()
-    raw = subjects[0]["raw"].copy()
+    raw = subjects[0].get("raw")
+    if raw is None:
+        raise HTTPException(status_code=400, detail="Raw data not available. Please re-upload the EEG file.")
+    raw = raw.copy()
 
     # Apply user-selected montage from study context
     montage_names = session.get("study_ctx", {}).get("montage", [])

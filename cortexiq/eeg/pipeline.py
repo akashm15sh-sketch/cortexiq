@@ -28,6 +28,8 @@ class EEGPipeline:
         self.stop_flag = False
         self.log_messages = []
         self._thread = None
+        self._psd_freqs = None
+        self._psd_data = None
 
     def _log(self, msg):
         self.log_messages.append(f"[{time.strftime('%H:%M:%S')}] {msg}")
