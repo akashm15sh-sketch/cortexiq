@@ -24,7 +24,3 @@ services:
         value: "false"
       - key: PYTHONUNBUFFERED
         value: "1"
-    disk:
-      name: cortexiq-data
-      mountPath: /app/data
-      sizeGB: 1
