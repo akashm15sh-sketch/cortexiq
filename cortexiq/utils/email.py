@@ -118,6 +118,11 @@ def _send_via_resend(api_key: str, receiver_email: str, otp_code: str) -> bool:
     Note: Free tier only allows sending to the Resend account owner's email.
     To send to any recipient, verify a custom domain at resend.com/domains.
     """
+    # If you verify a custom domain at resend.com/domains, 
+    # update RESEND_FROM_EMAIL to e.g. "CortexIQ <verify@cortexiq.ai>"
+    # Otherwise, it only works when sending to your account owner's email.
+    from_email = os.getenv("RESEND_FROM_EMAIL", "CortexIQ <onboarding@resend.dev>")
+    
     response = httpx.post(
         "https://api.resend.com/emails",
         headers={
@@ -125,7 +130,7 @@ def _send_via_resend(api_key: str, receiver_email: str, otp_code: str) -> bool:
             "Content-Type": "application/json",
         },
         json={
-            "from": "CortexIQ <onboarding@resend.dev>",
+            "from": from_email,
             "to": [receiver_email],
             "subject": f"CortexIQ Verification Code: {otp_code}",
             "html": _otp_html(otp_code),
