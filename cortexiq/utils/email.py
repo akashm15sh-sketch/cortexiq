@@ -1,7 +1,7 @@
-"""Email OTP sender — uses Resend HTTP API (primary) or Gmail SMTP (fallback).
+"""Email OTP sender — uses Gmail SMTP (primary) or Resend HTTP API (fallback).
 
-Resend: Free 3,000 emails/month — works on all cloud platforms (HTTP-based).
-Gmail SMTP: Works locally but blocked by Render/Vercel/Railway free tiers.
+Gmail SMTP: Uses App Password with STARTTLS (port 587) or SSL (port 465).
+Resend: Free 3,000 emails/month — requires verified domain for non-owner emails.
 """
 import os
 import ssl
@@ -32,37 +32,92 @@ def _otp_html(otp_code: str) -> str:
 
 
 def send_otp_email(receiver_email: str, otp_code: str) -> bool:
-    """Send OTP email. Tries Resend HTTP API first, then Gmail SMTP fallback."""
+    """Send OTP email. Tries Resend HTTP API first (fast), then Gmail SMTP fallback.
+    
+    Returns True if email was delivered, False otherwise (caller should show OTP on screen).
+    """
 
-    # ── Method 1: Resend HTTP API (works on all cloud platforms) ──
+    # ── Method 1: Resend HTTP API (fast fail, no port blocking issues) ──
     resend_key = os.getenv("RESEND_API_KEY")
     if resend_key:
         try:
             result = _send_via_resend(resend_key, receiver_email, otp_code)
             if result:
                 return True
-            print("Resend API failed, trying Gmail SMTP fallback...")
         except Exception as e:
-            print(f"Resend error: {e}, trying Gmail SMTP fallback...")
+            print(f"Resend error: {e}")
 
-    # ── Method 2: Gmail SMTP (works locally, blocked on most cloud free tiers) ──
+    # ── Method 2: Gmail SMTP (short timeouts to avoid blocking) ──
     gmail_user = os.getenv("GMAIL_USER")
     gmail_pass = os.getenv("GMAIL_PASS")
     if gmail_user and gmail_pass:
+        # Try STARTTLS on port 587
         try:
-            result = _send_via_gmail(gmail_user, gmail_pass, receiver_email, otp_code)
+            result = _send_via_gmail_starttls(gmail_user, gmail_pass, receiver_email, otp_code)
             if result:
                 return True
         except Exception as e:
-            print(f"Error sending email: {e}")
+            print(f"Gmail STARTTLS (587) failed: {e}")
 
-    # ── Both methods failed ──
+        # Try SSL on port 465
+        try:
+            result = _send_via_gmail_ssl(gmail_user, gmail_pass, receiver_email, otp_code)
+            if result:
+                return True
+        except Exception as e:
+            print(f"Gmail SSL (465) failed: {e}")
+
+    # ── All methods failed ──
     print("All email methods failed. OTP will be shown on screen as fallback.")
     return False
 
 
+def _send_via_gmail_starttls(sender_email: str, password: str, receiver_email: str, otp_code: str) -> bool:
+    """Send email via Gmail SMTP using STARTTLS on port 587."""
+    message = _build_email_message(sender_email, receiver_email, otp_code)
+    
+    context = ssl.create_default_context()
+    with smtplib.SMTP("smtp.gmail.com", 587, timeout=3) as server:
+        server.ehlo()
+        server.starttls(context=context)
+        server.ehlo()
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+    print(f"OTP sent via Gmail STARTTLS to {receiver_email}")
+    return True
+
+
+def _send_via_gmail_ssl(sender_email: str, password: str, receiver_email: str, otp_code: str) -> bool:
+    """Send email via Gmail SMTP using SSL on port 465."""
+    message = _build_email_message(sender_email, receiver_email, otp_code)
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=3) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message.as_string())
+    print(f"OTP sent via Gmail SSL to {receiver_email}")
+    return True
+
+
+def _build_email_message(sender_email: str, receiver_email: str, otp_code: str) -> MIMEMultipart:
+    """Build the MIME email message for OTP delivery."""
+    message = MIMEMultipart("alternative")
+    message["Subject"] = f"CortexIQ Verification Code: {otp_code}"
+    message["From"] = f"CortexIQ Neural Engine <{sender_email}>"
+    message["To"] = receiver_email
+
+    text = f"Your CortexIQ verification code is: {otp_code}\n\nThis code will expire in 5 minutes."
+    message.attach(MIMEText(text, "plain"))
+    message.attach(MIMEText(_otp_html(otp_code), "html"))
+    return message
+
+
 def _send_via_resend(api_key: str, receiver_email: str, otp_code: str) -> bool:
-    """Send email via Resend HTTP API (free: 3,000 emails/month)."""
+    """Send email via Resend HTTP API (free: 3,000 emails/month).
+    
+    Note: Free tier only allows sending to the Resend account owner's email.
+    To send to any recipient, verify a custom domain at resend.com/domains.
+    """
     response = httpx.post(
         "https://api.resend.com/emails",
         headers={
@@ -72,7 +127,7 @@ def _send_via_resend(api_key: str, receiver_email: str, otp_code: str) -> bool:
         json={
             "from": "CortexIQ <onboarding@resend.dev>",
             "to": [receiver_email],
-            "subject": f"CortexIQ OTP: {otp_code}",
+            "subject": f"CortexIQ Verification Code: {otp_code}",
             "html": _otp_html(otp_code),
         },
         timeout=10,
@@ -83,22 +138,3 @@ def _send_via_resend(api_key: str, receiver_email: str, otp_code: str) -> bool:
     else:
         print(f"Resend API error: {response.status_code} — {response.text}")
         return False
-
-
-def _send_via_gmail(sender_email: str, password: str, receiver_email: str, otp_code: str) -> bool:
-    """Send email via Gmail SMTP (local dev / non-restricted hosts)."""
-    message = MIMEMultipart("alternative")
-    message["Subject"] = f"CortexIQ OTP: {otp_code}"
-    message["From"] = f"CortexIQ Neural Engine <{sender_email}>"
-    message["To"] = receiver_email
-
-    text = f"Your CortexIQ verification code is: {otp_code}\n\nThis code will expire in 5 minutes."
-    message.attach(MIMEText(text, "plain"))
-    message.attach(MIMEText(_otp_html(otp_code), "html"))
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-    print(f"OTP sent via Gmail to {receiver_email}")
-    return True

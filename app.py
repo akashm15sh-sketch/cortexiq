@@ -148,7 +148,10 @@ async def send_otp(req: SendOTPRequest):
     # Send real email
     success = send_otp_email(email, code)
     
-    return {"message": f"OTP sent to {email}", "demo_otp": code if not success else "SENT", "status": "success" if success else "fallback"}
+    if success:
+        return {"message": f"Verification code sent to {email}", "status": "sent"}
+    else:
+        return {"message": "Email delivery unavailable. Use the code shown below.", "otp_code": code, "status": "fallback"}
 
 @app.post("/api/auth/verify-otp")
 async def verify_otp(req: VerifyOTPRequest):

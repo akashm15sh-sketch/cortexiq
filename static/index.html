@@ -1250,7 +1250,16 @@
         async function sendOTP() {
             try {
                 regEmail = $('r-email').value; const d = await req('POST', '/api/auth/send-otp', { email: regEmail });
-                $('r-step1').classList.add('hidden'); $('r-step2').classList.remove('hidden'); if (d.demo_otp) $('demo-otp-hint').textContent = `Demo OTP: ${d.demo_otp}`;
+                $('r-step1').classList.add('hidden'); $('r-step2').classList.remove('hidden');
+                if (d.status === 'fallback' && d.otp_code) {
+                    $('demo-otp-hint').innerHTML = `<div style="background:rgba(20,184,166,0.1);border:1px solid var(--accent);border-radius:8px;padding:10px;margin:8px 0;">
+                        <div style="font-size:10px;color:var(--dim);margin-bottom:4px;">⚠️ Email unavailable — your code:</div>
+                        <div style="font-size:22px;font-weight:700;letter-spacing:6px;color:var(--accent);">${d.otp_code}</div>
+                    </div>`;
+                    $('r-otp').value = d.otp_code;
+                } else {
+                    $('demo-otp-hint').innerHTML = `<span style="color:var(--accent);">✓ Code sent to ${regEmail}</span>`;
+                }
             } catch (e) { $('r-msg').innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
         }
         async function verifyOTP() {
