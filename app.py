@@ -866,6 +866,14 @@ async def download_result(filename: str, user: dict = Depends(get_current_user))
     media_type = media_types.get(ext, "application/octet-stream")
     return FileResponse(path, filename=safe_name, media_type=media_type)
 
+@app.get("/demo", response_class=HTMLResponse)
+async def demo_page():
+    with open(os.path.join(os.path.dirname(__file__), "static", "demo", "index.html"), "r") as f: return HTMLResponse(content=f.read())
+
+@app.get("/investor", response_class=HTMLResponse)
+async def investor_page():
+    with open(os.path.join(os.path.dirname(__file__), "static", "investor", "index.html"), "r") as f: return HTMLResponse(content=f.read())
+
 @app.get("/", response_class=HTMLResponse)
 async def root():
     with open(os.path.join(os.path.dirname(__file__), "static", "index.html"), "r") as f: return HTMLResponse(content=f.read())

@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CortexIQ — AI-Powered Neural Signal Intelligence</title>
+    <meta name="description"
+        content="CortexIQ transforms neuroscience research with AI-driven EEG analysis. Real-time signal processing, intelligent artifact removal, and automated reporting.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --bg-2: #0f172a;
+            --card: #0f172a;
+            --border: #1e293b;
+            --text: #f8fafc;
+            --dim: #94a3b8;
+            --muted: #64748b;
+            --accent: #14b8a6;
+            --accent-2: #06b6d4;
+            --accent-glow: rgba(20, 184, 166, 0.15);
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --amber: #f59e0b;
+            --green: #10b981;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ── Utility ── */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .text-accent {
+            color: var(--accent);
+        }
+
+        .text-dim {
+            color: var(--dim);
+        }
+
+        .text-muted {
+            color: var(--muted);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* ── Ambient Background ── */
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .ambient-bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--accent);
+            top: -200px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--purple);
+            top: 40%;
+            right: -150px;
+            animation-delay: -7s;
+        }
+
+        .orb-3 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-2);
+            bottom: -100px;
+            left: 30%;
+            animation-delay: -14s;
+        }
+
+        @keyframes orbFloat {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -40px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
+        }
+
+        /* ── Navigation ── */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 16px 0;
+            backdrop-filter: blur(24px) saturate(1.4);
+            background: rgba(3, 7, 18, 0.7);
+            border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .nav.scrolled {
+            padding: 10px 0;
+            background: rgba(3, 7, 18, 0.92);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-logo span {
+            color: var(--text);
+            font-weight: 300;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--dim);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .btn-demo {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-demo:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 30px rgba(20, 184, 166, 0.3);
+        }
+
+        /* ── Hero Section ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 140px 24px 80px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(20, 184, 166, 0.08);
+            border: 1px solid rgba(20, 184, 166, 0.2);
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent);
+            margin-bottom: 32px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero-badge .pulse {
+            width: 8px;
+            height: 8px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.5);
+            }
+        }
+
+        .hero h1 {
+            font-size: clamp(42px, 6vw, 80px);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+
+        .hero h1 .gradient-text {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: clamp(16px, 2vw, 20px);
+            color: var(--dim);
+            max-width: 620px;
+            margin: 0 auto 48px;
+            font-weight: 400;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .btn-primary-lg {
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            color: #fff;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary-lg:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(20, 184, 166, 0.35);
+        }
+
+        .btn-outline-lg {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 16px 40px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-outline-lg:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .hero-metrics {
+            display: flex;
+            gap: 48px;
+            margin-top: 72px;
+            animation: fadeInUp 0.8s ease 0.5s both;
+        }
+
+        .hero-metric {
+            text-align: center;
+        }
+
+        .hero-metric .value {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .hero-metric .label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Sections ── */
+        section {
+            position: relative;
+            z-index: 1;
+            padding: 120px 0;
+        }
+
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: clamp(28px, 4vw, 44px);
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+            line-height: 1.15;
+        }
+
+        .section-desc {
+            font-size: 17px;
+            color: var(--dim);
+            max-width: 600px;
+            margin-bottom: 56px;
+            line-height: 1.7;
+        }
+
+        /* ── Product Showcase ── */
+        .showcase {
+            background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 50%, var(--bg) 100%);
+        }
+
+        .screenshot-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(20, 184, 166, 0.05);
+            transition: transform 0.6s ease, box-shadow 0.6s ease;
+        }
+
+        .screenshot-wrapper:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 32px 100px rgba(0, 0, 0, 0.6), 0 0 80px rgba(20, 184, 166, 0.08);
+        }
+
+        .screenshot-wrapper img {
+            width: 100%;
+            display: block;
+        }
+
+        .screenshot-wrapper .overlay-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 24px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .screenshot-wrapper .overlay-label span {
+            font-size: 12px;
+            color: var(--dim);
+            font-weight: 400;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+            margin-top: 48px;
+        }
+
+        .showcase-grid.two-col {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        /* ── Problem / Solution ── */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: start;
+        }
+
+        .problem-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .problem-card:hover {
+            border-color: rgba(20, 184, 166, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .problem-card .icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .problem-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .problem-card p {
+            font-size: 14px;
+            color: var(--dim);
+            line-height: 1.7;
+        }
+
+        .problem-card .stat {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .problem-card .stat .num {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .problem-card .stat .unit {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* ── Features ── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(20, 184, 166, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--accent-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.6;
+        }
+
+        /* ── Tech Stack ── */
+        .tech-pills {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 32px;
+        }
+
+        .tech-pill {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--dim);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .tech-pill:hover {
+            border-color: var(--accent);
+            color: var(--text);
+            background: var(--accent-glow);
+        }
+
+        .tech-pill .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ── Market Opportunity ── */
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 48px;
+        }
+
+        .market-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .market-card:hover {
+            border-color: rgba(20, 184, 166, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .market-card .num {
+            font-size: 36px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .market-card .label {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.5;
+        }
+
+        /* ── Roadmap ── */
+        .roadmap-timeline {
+            position: relative;
+            padding-left: 48px;
+        }
+
+        .roadmap-timeline::before {
+            content: '';
+            position: absolute;
+            left: 18px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--accent), var(--purple), var(--muted));
+        }
+
+        .roadmap-item {
+            position: relative;
+            margin-bottom: 40px;
+        }
+
+        .roadmap-item::before {
+            content: '';
+            position: absolute;
+            left: -34px;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            background: var(--bg);
+        }
+
+        .roadmap-item.current::before {
+            background: var(--accent);
+            box-shadow: 0 0 12px rgba(20, 184, 166, 0.5);
+        }
+
+        .roadmap-item.future::before {
+            border-color: var(--muted);
+        }
+
+        .roadmap-item .phase {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .roadmap-item.future .phase {
+            color: var(--muted);
+        }
+
+        .roadmap-item h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .roadmap-item p {
+            font-size: 14px;
+            color: var(--dim);
+            line-height: 1.6;
+        }
+
+        .roadmap-item .tag-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .roadmap-item .tag {
+            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .roadmap-item.future .tag {
+            background: rgba(100, 116, 139, 0.1);
+            color: var(--muted);
+        }
+
+        /* ── CTA / Contact ── */
+        .cta-section {
+            text-align: center;
+            padding: 140px 0;
+        }
+
+        .cta-card {
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.06), rgba(139, 92, 246, 0.06));
+            border: 1px solid rgba(20, 184, 166, 0.15);
+            border-radius: 24px;
+            padding: 72px 48px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta-card h2 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .cta-card p {
+            color: var(--dim);
+            font-size: 16px;
+            margin-bottom: 36px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid var(--border);
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .footer p {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .footer .legal {
+            margin-top: 8px;
+            font-size: 10px;
+            color: rgba(100, 116, 139, 0.6);
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--muted);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .nav-links a:not(.btn-demo) {
+                display: none;
+            }
+
+            .hero-metrics {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .problem-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .showcase-grid.two-col {
+                grid-template-columns: 1fr;
+            }
+
+            .market-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* ── Intersection Observer Animations ── */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── EEG Waveform Animation ── */
+        .eeg-line {
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            overflow: hidden;
+            opacity: 0.15;
+        }
+
+        .eeg-line svg {
+            width: 200%;
+            animation: eegScroll 8s linear infinite;
+        }
+
+        @keyframes eegScroll {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="container nav-inner">
+            <div class="nav-logo">Cortex<span>IQ</span></div>
+            <div class="nav-links">
+                <a href="#product">Product</a>
+                <a href="#problem">Why Now</a>
+                <a href="#features">Features</a>
+                <a href="#market">Market</a>
+                <a href="#roadmap">Roadmap</a>
+                <a href="#contact" class="btn-demo">Request Demo →</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-badge">
+            <div class="pulse"></div>
+            Seed Stage · Seeking Strategic Partners
+        </div>
+        <h1>
+            The <span class="gradient-text">AI Brain</span> for<br>
+            Neuroscience Research
+        </h1>
+        <p class="hero-sub">
+            CortexIQ transforms raw neural signals into research-ready insights in minutes — not days.
+            AI-powered EEG analysis platform for the next generation of brain research.
+        </p>
+        <div class="hero-actions">
+            <a href="#contact" class="btn-primary-lg">Schedule a Demo <span>→</span></a>
+            <a href="#product" class="btn-outline-lg">See the Product</a>
+        </div>
+        <div class="hero-metrics">
+            <div class="hero-metric">
+                <div class="value" id="metric-speed">100×</div>
+                <div class="label">Faster Analysis</div>
+            </div>
+            <div class="hero-metric">
+                <div class="value" id="metric-accuracy">94%</div>
+                <div class="label">Artifact Detection</div>
+            </div>
+            <div class="hero-metric">
+                <div class="value" id="metric-formats">6+</div>
+                <div class="label">File Formats</div>
+            </div>
+            <div class="hero-metric">
+                <div class="value" id="metric-cost">$0</div>
+                <div class="label">Setup Cost</div>
+            </div>
+        </div>
+
+        <!-- Subtle EEG animation -->
+        <div class="eeg-line">
+            <svg viewBox="0 0 2400 60" preserveAspectRatio="none">
+                <path
+                    d="M0 30 Q20 10 40 30 Q60 50 80 30 Q100 10 120 30 Q140 50 160 30 Q180 10 200 30 Q220 50 240 30 Q260 10 280 30 Q300 50 320 30 Q340 10 360 30 Q380 50 400 30 Q420 10 440 30 Q460 50 480 30 Q500 10 520 30 Q540 50 560 30 Q580 10 600 30 Q620 50 640 30 Q660 10 680 30 Q700 50 720 30 Q740 10 760 30 Q780 50 800 30 Q820 10 840 30 Q860 50 880 30 Q900 10 920 30 Q940 50 960 30 Q980 10 1000 30 Q1020 50 1040 30 Q1060 10 1080 30 Q1100 50 1120 30 Q1140 10 1160 30 Q1180 50 1200 30 Q1220 10 1240 30 Q1260 50 1280 30 Q1300 10 1320 30 Q1340 50 1360 30 Q1380 10 1400 30 Q1420 50 1440 30 Q1460 10 1480 30 Q1500 50 1520 30 Q1540 10 1560 30 Q1580 50 1600 30 Q1620 10 1640 30 Q1660 50 1680 30 Q1700 10 1720 30 Q1740 50 1760 30 Q1780 10 1800 30 Q1820 50 1840 30 Q1860 10 1880 30 Q1900 50 1920 30 Q1940 10 1960 30 Q1980 50 2000 30 Q2020 10 2040 30 Q2060 50 2080 30 Q2100 10 2120 30 Q2140 50 2160 30 Q2180 10 2200 30 Q2220 50 2240 30 Q2260 10 2280 30 Q2300 50 2320 30 Q2340 10 2360 30 Q2380 50 2400 30"
+                    fill="none" stroke="#14b8a6" stroke-width="1.5" />
+            </svg>
+        </div>
+    </section>
+
+    <!-- Product Showcase -->
+    <section class="showcase" id="product">
+        <div class="container">
+            <div class="animate-on-scroll">
+                <div class="section-label">Product</div>
+                <h2 class="section-title">One platform. Upload → Analyze → Publish.</h2>
+                <p class="section-desc">
+                    From raw EEG data to publication-ready results in a single workflow.
+                    No MATLAB scripts. No manual preprocessing. Just science.
+                </p>
+            </div>
+            <div class="showcase-grid animate-on-scroll">
+                <div class="screenshot-wrapper">
+                    <img src="/static/investor/dashboard.png"
+                        alt="CortexIQ Dashboard — Real-time EEG analysis with AI chat" loading="lazy">
+                    <div class="overlay-label">
+                        Real-Time Neural Dashboard
+                        <span>Multi-channel EEG visualization with topographic mapping and AI-powered
+                            interpretation</span>
+                    </div>
+                </div>
+            </div>
+            <div class="showcase-grid two-col animate-on-scroll" style="margin-top: 24px;">
+                <div class="screenshot-wrapper">
+                    <img src="/static/investor/pipeline.png" alt="CortexIQ AI Pipeline — Automated signal processing"
+                        loading="lazy">
+                    <div class="overlay-label">
+                        AI Pipeline Engine
+                        <span>Natural language → automated preprocessing pipeline</span>
+                    </div>
+                </div>
+                <div class="screenshot-wrapper">
+                    <img src="/static/investor/results.png" alt="CortexIQ Results — Statistical analysis and reports"
+                        loading="lazy">
+                    <div class="overlay-label">
+                        Statistical Reports & Export
+                        <span>Band power, PSD, correlation analysis with PDF/CSV/ZIP export</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem / Why Now -->
+    <section id="problem">
+        <div class="container">
+            <div class="animate-on-scroll">
+                <div class="section-label">The Problem</div>
+                <h2 class="section-title">Neuroscience research is stuck in 1990s tooling</h2>
+                <p class="section-desc">
+                    Researchers spend more time fighting MATLAB scripts and manual preprocessing than
+                    actually doing science. CortexIQ eliminates the bottleneck.
+                </p>
+            </div>
+            <div class="problem-grid animate-on-scroll">
+                <div class="problem-card">
+                    <div class="icon" style="background: rgba(239, 68, 68, 0.1);">🐌</div>
+                    <h3>The Old Way</h3>
+                    <p>
+                        Manual MATLAB/EEGLAB scripting. Hours of parameter tuning for each dataset.
+                        Copy-paste workflows between labs. Error-prone, non-reproducible.
+                    </p>
+                    <div class="stat">
+                        <span class="num" style="color: #ef4444;">40+</span>
+                        <span class="unit">hours per study on preprocessing alone</span>
+                    </div>
+                </div>
+                <div class="problem-card" style="border-color: rgba(20, 184, 166, 0.2);">
+                    <div class="icon" style="background: var(--accent-glow);">⚡</div>
+                    <h3>The CortexIQ Way</h3>
+                    <p>
+                        Upload your data. Tell the AI what you need in plain English.
+                        Get a validated, reproducible pipeline with publication-ready results.
+                    </p>
+                    <div class="stat">
+                        <span class="num">15</span>
+                        <span class="unit">minutes from upload to results</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" style="background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 50%, var(--bg) 100%);">
+        <div class="container">
+            <div class="animate-on-scroll">
+                <div class="section-label">Capabilities</div>
+                <h2 class="section-title">Built for real researchers, not demos</h2>
+                <p class="section-desc">
+                    Every feature designed to solve actual bottlenecks reported by
+                    neuroscience labs worldwide.
+                </p>
+            </div>
+            <div class="features-grid animate-on-scroll">
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>AI Signal Interpreter</h3>
+                    <p>Ask questions about your data in natural language. Powered by Claude — understands EEG context,
+                        suggests analyses, interprets results.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔬</div>
+                    <h3>Auto Pipeline Builder</h3>
+                    <p>AI generates validated preprocessing pipelines — filtering, ICA, artifact removal, epoching, PSD
+                        — from a single prompt.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Statistical Analysis</h3>
+                    <p>Automated band power analysis, cross-channel correlations, descriptive statistics, and ERP
+                        extraction with effect sizes.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🗺️</div>
+                    <h3>Interactive Montage</h3>
+                    <p>Visual 10-20/10-10/HD electrode selection with drag-and-drop channel mapping. Supports up to
+                        256-channel high-density EEG.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📄</div>
+                    <h3>Publication Reports</h3>
+                    <p>One-click generation of publication-ready PDF reports, CSV data tables, and ZIP archives with all
+                        figures and raw outputs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📁</div>
+                    <h3>Multi-Format Support</h3>
+                    <p>EDF, BDF, FIF (MNE), EEGLAB .set, BrainVision .vhdr, CSV, TSV, NumPy — all formats, zero
+                        conversion needed.</p>
+                </div>
+            </div>
+
+            <div class="animate-on-scroll" style="margin-top: 64px;">
+                <div class="section-label">Technology</div>
+                <h2 class="section-title" style="font-size: 28px;">Powered by cutting-edge infrastructure</h2>
+                <div class="tech-pills">
+                    <div class="tech-pill"><span class="dot" style="background: #3776AB;"></span> Python / FastAPI</div>
+                    <div class="tech-pill"><span class="dot" style="background: #D97706;"></span> MNE-Python</div>
+                    <div class="tech-pill"><span class="dot" style="background: #cc785c;"></span> Claude AI (Anthropic)
+                    </div>
+                    <div class="tech-pill"><span class="dot" style="background: #3B82F6;"></span> NumPy / SciPy</div>
+                    <div class="tech-pill"><span class="dot" style="background: #10B981;"></span> Docker / Render</div>
+                    <div class="tech-pill"><span class="dot" style="background: #8B5CF6;"></span> SQLite / SQLAlchemy
+                    </div>
+                    <div class="tech-pill"><span class="dot" style="background: #EC4899;"></span> Plotly.js</div>
+                    <div class="tech-pill"><span class="dot" style="background: #F59E0B;"></span> JWT Auth</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Market -->
+    <section id="market">
+        <div class="container">
+            <div class="animate-on-scroll">
+                <div class="section-label">Market Opportunity</div>
+                <h2 class="section-title">Massive, underserved, and growing fast</h2>
+                <p class="section-desc">
+                    The neurotechnology market is exploding — but research tooling hasn't evolved in
+                    two decades. CortexIQ captures value at the infrastructure layer.
+                </p>
+            </div>
+            <div class="market-grid animate-on-scroll">
+                <div class="market-card">
+                    <div class="num">$17.1B</div>
+                    <div class="label">Global Neurotechnology<br>Market by 2028</div>
+                </div>
+                <div class="market-card">
+                    <div class="num">14.4%</div>
+                    <div class="label">CAGR<br>2023–2028</div>
+                </div>
+                <div class="market-card">
+                    <div class="num">30K+</div>
+                    <div class="label">Active EEG Research<br>Labs Worldwide</div>
+                </div>
+                <div class="market-card">
+                    <div class="num">$2.4B</div>
+                    <div class="label">BCI Market<br>by 2027</div>
+                </div>
+            </div>
+
+            <div class="problem-grid animate-on-scroll" style="margin-top: 64px;">
+                <div class="problem-card">
+                    <div class="icon" style="background: rgba(139, 92, 246, 0.1);">🎯</div>
+                    <h3>Target Users</h3>
+                    <p>
+                        Academic neuroscience labs, clinical EEG departments, BCI startups,
+                        pharmaceutical R&D teams conducting CNS drug trials, and
+                        cognitive neuroscience research groups.
+                    </p>
+                </div>
+                <div class="problem-card">
+                    <div class="icon" style="background: rgba(245, 158, 11, 0.1);">💰</div>
+                    <h3>Revenue Model</h3>
+                    <p>
+                        SaaS subscription: Free tier (limited processing), Pro ($49/mo per researcher),
+                        Lab License ($299/mo unlimited), Enterprise (custom pricing for pharma/hospitals).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap -->
+    <section id="roadmap" style="background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 50%, var(--bg) 100%);">
+        <div class="container">
+            <div class="animate-on-scroll">
+                <div class="section-label">Product Roadmap</div>
+                <h2 class="section-title">From prototype to platform</h2>
+                <p class="section-desc">
+                    Execution plan for the next 18 months, from current MVP to
+                    full multi-modal neuroscience SaaS.
+                </p>
+            </div>
+            <div class="roadmap-timeline animate-on-scroll">
+                <div class="roadmap-item current">
+                    <div class="phase">Now — Q2 2026 (Current)</div>
+                    <h3>Working MVP</h3>
+                    <p>
+                        Full EEG analysis pipeline live on cloud. AI chat, multi-format upload,
+                        automated preprocessing, statistical analysis, PDF/CSV export. Deployed on Render.
+                    </p>
+                    <div class="tag-row">
+                        <span class="tag">✓ Live</span>
+                        <span class="tag">AI Pipeline</span>
+                        <span class="tag">6+ Formats</span>
+                        <span class="tag">Cloud Deploy</span>
+                    </div>
+                </div>
+                <div class="roadmap-item">
+                    <div class="phase">Q3 2026</div>
+                    <h3>Multi-Subject & Collaboration</h3>
+                    <p>
+                        Batch processing for multi-subject studies. Shared workspaces for lab teams.
+                        Group-level statistics. Version control for analysis pipelines.
+                    </p>
+                    <div class="tag-row">
+                        <span class="tag">Batch Analysis</span>
+                        <span class="tag">Team Workspaces</span>
+                        <span class="tag">Pipeline Sharing</span>
+                    </div>
+                </div>
+                <div class="roadmap-item future">
+                    <div class="phase">Q4 2026</div>
+                    <h3>Multi-Modal Expansion</h3>
+                    <p>
+                        Support for fMRI, MEG, EMG, and fNIRS data. Cross-modal fusion analysis.
+                        Integration with BIDS standard for reproducible neuroimaging.
+                    </p>
+                    <div class="tag-row">
+                        <span class="tag">fMRI</span>
+                        <span class="tag">MEG</span>
+                        <span class="tag">BIDS</span>
+                        <span class="tag">Data Fusion</span>
+                    </div>
+                </div>
+                <div class="roadmap-item future">
+                    <div class="phase">Q1 2027</div>
+                    <h3>Enterprise & Clinical</h3>
+                    <p>
+                        FDA/CE pathway for clinical EEG support. HIPAA-compliant infrastructure.
+                        Self-hosted enterprise option. API for integration with hospital EMR systems.
+                    </p>
+                    <div class="tag-row">
+                        <span class="tag">HIPAA</span>
+                        <span class="tag">Clinical</span>
+                        <span class="tag">API</span>
+                        <span class="tag">Self-Hosted</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section" id="contact">
+        <div class="container">
+            <div class="cta-card animate-on-scroll">
+                <div class="section-label">Let's Talk</div>
+                <h2>Interested in CortexIQ?</h2>
+                <p>
+                    We're looking for strategic investors who understand deep-tech and
+                    the neuroscience opportunity. Let's explore how we can build the future of
+                    brain research together.
+                </p>
+                <div class="cta-buttons">
+                    <a href="mailto:contactakashhal@gmail.com?subject=CortexIQ%20Investor%20Inquiry"
+                        class="btn-primary-lg">
+                        Contact Founder →
+                    </a>
+                    <a href="/" class="btn-outline-lg">
+                        Try Live Platform
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>CortexIQ — AI-Powered Neural Signal Intelligence</p>
+            <p class="legal">Confidential. For qualified investors only. All market data sourced from Grand View
+                Research, Allied Market Research, MarketsandMarkets 2024–2025 reports.</p>
+        </div>
+    </footer>
+
+    <script>
+        // ── Navbar scroll effect ──
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // ── Intersection Observer for scroll animations ──
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+        document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+        // ── Counter animation for hero metrics ──
+        function animateCounter(el, target, suffix = '', prefix = '') {
+            const isFloat = target % 1 !== 0;
+            let current = 0;
+            const increment = target / 60;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                el.textContent = prefix + (isFloat ? current.toFixed(1) : Math.floor(current)) + suffix;
+            }, 16);
+        }
+
+        // Trigger counters when hero is in view
+        let countersAnimated = false;
+        const heroObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !countersAnimated) {
+                countersAnimated = true;
+                animateCounter(document.getElementById('metric-speed'), 100, '×');
+                animateCounter(document.getElementById('metric-accuracy'), 94, '%');
+                animateCounter(document.getElementById('metric-formats'), 6, '+');
+                // $0 stays static
+            }
+        });
+        heroObserver.observe(document.querySelector('.hero-metrics'));
+
+        // ── Smooth scroll for nav links ──
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = document.querySelector(a.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

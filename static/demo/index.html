@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CortexIQ — Neural Signal Analysis Platform</title>
+    <meta name="description" content="CortexIQ Demo — AI-powered EEG analysis platform">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --bg: #030712;
+            --card: #0f172a;
+            --input: #020617;
+            --border: #1e293b;
+            --text: #f8fafc;
+            --dim: #64748b;
+            --accent: #14b8a6;
+            --accent-glow: rgba(20, 184, 166, 0.15);
+            --danger: #f43f5e;
+            --green: #10b981;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --font: Arial, Helvetica, sans-serif;
+            --mono: 'Courier New', Courier, monospace;
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes blink {
+
+            0%,
+            80%,
+            100% {
+                opacity: 0
+            }
+
+            40% {
+                opacity: 1
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-6px)
+            }
+        }
+
+        .float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .fade {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            background: rgba(3, 7, 18, 0.8);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+
+        .topbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--dim);
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: var(--accent-glow);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            background: #0d9488;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-outline.active {
+            background: #4f46e5;
+            color: white;
+            border-color: #4f46e5;
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .btn-sm {
+            font-size: 11px;
+            padding: 6px 12px;
+        }
+
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+        }
+
+        #app-container {
+            padding: 0 20px 20px 20px;
+            height: calc(100vh - 50px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .tab {
+            padding: 12px 4px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--dim);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+            flex: 1;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel-h {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--dim);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        select.input {
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .upload-box {
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .upload-box:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 10px;
+            border: 1px solid transparent;
+        }
+
+        .alert-success {
+            background: var(--accent-glow);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .chat-box {
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .msg.bot {
+            background: var(--border);
+            color: var(--text);
+            border-bottom-left-radius: 2px;
+        }
+
+        .msg.user {
+            background: var(--accent);
+            color: var(--bg);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .typing {
+            display: flex;
+            gap: 4px;
+            padding: 12px;
+            background: var(--input);
+            border-radius: 12px;
+            width: fit-content;
+            margin: 8px 0;
+            border: 1px solid var(--border);
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: blink 1.4s infinite both;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--input);
+            font-size: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+        }
+
+        .step-n {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+            font-size: 10px;
+        }
+
+        .step.active {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .step.complete {
+            color: var(--green);
+        }
+
+        .step.complete .step-n {
+            background: var(--green);
+            color: white;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--blue));
+            width: 0%;
+            transition: 0.3s;
+        }
+
+        .profile-hero {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        /* Montage */
+        .montage-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .montage-svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .montage-svg .head-outline {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 1.5;
+        }
+
+        .montage-svg .nose-line {
+            fill: none;
+            stroke: var(--dim);
+            stroke-width: 1.2;
+        }
+
+        .montage-svg .ear-line {
+            fill: none;
+            stroke: var(--dim);
+            stroke-width: 1;
+        }
+
+        .electrode {
+            fill: var(--accent);
+            stroke: #0d9488;
+            stroke-width: 1;
+            cursor: pointer;
+            transition: fill 0.15s;
+        }
+
+        .electrode-label {
+            fill: var(--text);
+            font-size: 3.2px;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            font-family: var(--font);
+            font-weight: 600;
+        }
+
+        /* Mapping */
+        .mapping-list {
+            margin-top: 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+        }
+
+        .mapping-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .mapping-label {
+            font-size: 10px;
+            color: var(--dim);
+            width: 40px;
+            font-weight: 600;
+        }
+
+        /* Demo Banner */
+        .demo-banner {
+            background: linear-gradient(90deg, rgba(20, 184, 166, 0.1), rgba(139, 92, 246, 0.1));
+            border-bottom: 1px solid rgba(20, 184, 166, 0.2);
+            padding: 6px 24px;
+            font-size: 11px;
+            color: var(--accent);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .demo-banner a {
+            color: var(--accent);
+            text-decoration: underline;
+            margin-left: 8px;
+        }
+
+        /* Results Table */
+        .res-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .res-table th {
+            background: var(--input);
+            color: var(--accent);
+            text-align: left;
+            padding: 8px 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .res-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--dim);
+        }
+
+        .res-table tr:hover td {
+            background: rgba(20, 184, 166, 0.03);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="demo-banner">
+        🧪 Interactive Demo — Explore CortexIQ with simulated EEG data
+        <a href="/investor">← Back to Overview</a>
+    </div>
+    <div class="topbar">
+        <div class="logo">CortexIQ</div>
+        <div class="topbar-right">
+            <span style="margin-right:12px;font-weight:600;font-size:13px;">Dr. Demo</span>
+            <span class="badge">Researcher</span>
+        </div>
+    </div>
+
+    <div id="app-container">
+        <div class="tabs">
+            <div class="tab active" onclick="tab('study')">Study</div>
+            <div class="tab" onclick="tab('analysis')">Analysis</div>
+            <div class="tab" onclick="tab('results')">Results</div>
+            <div class="tab" onclick="tab('settings')">Settings</div>
+        </div>
+
+        <!-- ══════ STUDY TAB ══════ -->
+        <div id="t-study" class="tab-content active" style="overflow-y:auto;">
+            <div class="grid" style="height:auto;">
+                <div class="panel" style="margin-bottom:16px;">
+                    <div class="panel-h">Study Management</div>
+                    <div style="display:flex;gap:12px;margin-bottom:20px;">
+                        <button class="btn btn-outline active" id="btn-choice-new">Create New</button>
+                        <button class="btn btn-outline" id="btn-choice-saved" onclick="showSavedStudies()">Load
+                            Saved</button>
+                    </div>
+
+                    <div id="saved-list" class="hidden"
+                        style="margin-bottom:20px;max-height:200px;overflow-y:auto;background:var(--input);border-radius:8px;padding:8px;">
+                        <div style="padding:10px;border-bottom:1px solid var(--border);cursor:pointer;"
+                            onclick="loadDemoStudy()">
+                            <div style="font-weight:600;font-size:13px;">Alpha Rhythm Study</div>
+                            <div style="font-size:10px;color:var(--dim);">EEG • 3 subjects • Mar 28, 2026</div>
+                        </div>
+                        <div style="padding:10px;cursor:pointer;" onclick="loadDemoStudy()">
+                            <div style="font-weight:600;font-size:13px;">P300 Oddball Paradigm</div>
+                            <div style="font-size:10px;color:var(--dim);">EEG • 5 subjects • Mar 15, 2026</div>
+                        </div>
+                    </div>
+
+                    <div id="new-study-area">
+                        <div class="form-group"><label class="label">Modality</label>
+                            <select class="input" id="s-mod">
+                                <option value="EEG">EEG — Electroencephalography</option>
+                                <option value="fMRI">fMRI — Functional MRI</option>
+                                <option value="EMG">EMG — Electromyography</option>
+                                <option value="MEG">MEG — Magnetoencephalography</option>
+                            </select>
+                        </div>
+
+                        <div class="upload-box" onclick="simulateUpload()">
+                            <div style="font-size:14px;font-weight:600;color:var(--dim);">+</div>
+                            <div id="up-txt" style="font-size:12px;color:var(--dim);margin-top:8px;">Click to load demo
+                                EEG data</div>
+                        </div>
+                    </div>
+
+                    <div id="sub-list-container" class="hidden" style="margin:20px 0;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <label class="label" style="margin:0;">Loaded Subjects</label>
+                        </div>
+                        <div id="sub-list"
+                            style="background:var(--input);border-radius:8px;border:1px solid var(--border);max-height:150px;overflow-y:auto;">
+                        </div>
+                    </div>
+
+                    <div id="study-form" class="hidden">
+                        <div style="margin-top:20px;">
+                            <input class="input" id="s-name" placeholder="Study Name" value="Resting State Alpha"
+                                style="margin-bottom:12px;">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                                <div><label class="label">Subject Count</label><input type="number" class="input"
+                                        value="3"></div>
+                                <div><label class="label">Sampling Rate (Hz)</label><input type="number" class="input"
+                                        value="256"></div>
+                            </div>
+                            <div style="margin-bottom:12px;">
+                                <label class="label">Reference Type</label>
+                                <select class="input">
+                                    <option>Average</option>
+                                    <option>Linked Mastoids</option>
+                                </select>
+                            </div>
+                            <textarea class="input" placeholder="Conditions / Paradigm"
+                                style="height:60px;margin-bottom:12px;">Eyes Open vs Eyes Closed — 2-minute blocks alternating 5 times</textarea>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <button class="btn btn-outline">Save Context</button>
+                                <button class="btn btn-primary" onclick="initStudy()">Initialize Analysis</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="up-status" style="margin-top:12px;"></div>
+                </div>
+
+                <div style="position:sticky;top:80px;">
+                    <div class="panel">
+                        <div class="panel-h" style="display:flex;justify-content:space-between;align-items:center;">
+                            Data Overview
+                            <span id="plot-range" style="font-size:10px;color:var(--dim);"></span>
+                        </div>
+                        <div id="plot-prev" style="height:280px;width:100%;color:var(--dim);font-size:12px;">Waiting for
+                            data...</div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-h">Signal Mapping & Info</div>
+                        <div id="info-prev"
+                            style="font-family:var(--mono);font-size:11px;color:var(--dim);margin-bottom:8px;">No file
+                            loaded.</div>
+                        <div id="mapping-list" class="mapping-list"></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-h" style="display:flex;justify-content:space-between;align-items:center;">
+                            Channel Montage
+                            <span class="badge">8 / 21 Selected</span>
+                        </div>
+                        <div class="montage-container">
+                            <svg viewBox="0 0 100 100" class="montage-svg">
+                                <circle cx="50" cy="50" r="45" class="head-outline" />
+                                <path d="M 45 5.5 L 50 1 L 55 5.5" class="nose-line" />
+                                <path d="M 5 50 Q 0 50 5 40" class="ear-line" />
+                                <path d="M 95 50 Q 100 50 95 40" class="ear-line" />
+                                <g id="electrode-group"></g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ ANALYSIS TAB ══════ -->
+        <div id="t-analysis" class="tab-content">
+            <div id="ana-header" class="panel hidden"
+                style="flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:linear-gradient(90deg,#1e293b,#0f172a);border:1px solid var(--accent);margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="font-size:18px;font-weight:700;color:var(--accent);" id="ana-name">Resting State Alpha
+                    </div>
+                    <div
+                        style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(0,242,254,0.1);color:var(--accent);border:1px solid var(--accent);">
+                        EEG</div>
+                </div>
+                <div style="display:flex;gap:20px;font-size:12px;color:var(--dim);">
+                    <div><span style="color:var(--accent)">Subjects:</span> 3</div>
+                    <div><span style="color:var(--accent)">Sfreq:</span> 256 Hz</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:0;flex:1;min-height:0;">
+                <div class="panel"
+                    style="display:flex;flex-direction:column;flex:1;min-width:280px;overflow:hidden;margin:0;">
+                    <div class="panel-h" style="flex-shrink:0;">AI Assistant</div>
+                    <div class="chat-box" id="chat" style="flex:1;min-height:0;overflow-y:auto;">
+                        <div class="msg bot">Ready for analysis. I've loaded 3 subjects with 8-channel EEG data. Ask me
+                            anything or describe the analysis you'd like to run.</div>
+                    </div>
+                    <div id="thinking" class="hidden" style="padding:0 16px 8px 16px;flex-shrink:0;">
+                        <div class="typing">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                    </div>
+                    <div
+                        style="display:flex;gap:8px;padding:16px;border-top:1px solid var(--border);flex-shrink:0;align-items:center;">
+                        <select
+                            style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;flex-shrink:0;">
+                            <option>Claude (Anthropic)</option>
+                        </select>
+                        <input class="input" id="chat-in" placeholder="Ask AI to process data..."
+                            onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;">
+                        <button class="btn btn-primary" onclick="sendChat()">Send</button>
+                    </div>
+                </div>
+                <div style="width:6px;cursor:col-resize;background:var(--border);border-radius:3px;flex-shrink:0;">
+                </div>
+                <div id="pipe-panel" class="panel hidden"
+                    style="display:flex;flex-direction:column;width:420px;min-width:280px;overflow:hidden;margin:0;">
+                    <div class="panel-h"
+                        style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+                        Pipeline
+                        <div id="pipe-btns" style="display:flex;gap:6px;">
+                            <button class="btn btn-primary btn-sm" id="btn-run" onclick="runPipeline()"
+                                style="padding:2px 8px;font-size:10px;">Run</button>
+                        </div>
+                    </div>
+                    <div id="pipe-list" style="display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;">
+                    </div>
+                    <div class="progress-bar" id="pipe-progress">
+                        <div class="progress-fill" id="pipe-fill"></div>
+                    </div>
+                    <div id="pipe-log"
+                        style="margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--dim);max-height:100px;overflow-y:auto;background:var(--input);padding:8px;border-radius:4px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ RESULTS TAB ══════ -->
+        <div id="t-results" class="tab-content" style="overflow-y:auto;">
+            <div class="panel">
+                <div class="panel-h">Results & Statistical Analysis</div>
+                <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;">
+                    <button class="btn btn-primary" onclick="generateResults()">Generate Report</button>
+                    <span id="gen-status" style="font-size:11px;color:var(--dim);"></span>
+                </div>
+                <div id="res-area" class="hidden" style="animation:fadeIn 0.4s ease;">
+                    <div style="margin-bottom:20px;">
+                        <div
+                            style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                            1. Global Descriptive Statistics</div>
+                        <div id="res-global" style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <div
+                            style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                            2. Band Power Analysis</div>
+                        <div id="res-band" style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <div
+                            style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                            3. Spectral Density Plot</div>
+                        <div id="res-psd" style="height:300px;border:1px solid var(--border);border-radius:8px;"></div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <div
+                            style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                            4. Cross-Channel Correlation</div>
+                        <div id="res-corr" style="height:350px;border:1px solid var(--border);border-radius:8px;"></div>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <div
+                            style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                            General Interpretation</div>
+                        <div id="res-interp"
+                            style="font-size:12px;line-height:1.6;color:var(--dim);background:var(--input);border:1px solid var(--border);border-radius:8px;padding:14px;">
+                        </div>
+                    </div>
+                    <div>
+                        <div
+                            style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                            Downloads</div>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm"
+                                onclick="alert('Demo mode — PDF export available in full product')">📄 PDF
+                                Report</button>
+                            <button class="btn btn-outline btn-sm"
+                                onclick="alert('Demo mode — CSV export available in full product')">📊 CSV Data</button>
+                            <button class="btn btn-outline btn-sm"
+                                onclick="alert('Demo mode — ZIP export available in full product')">📦 ZIP
+                                Archive</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ SETTINGS TAB ══════ -->
+        <div id="t-settings" class="tab-content" style="overflow-y:auto;">
+            <div class="grid" style="grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="panel">
+                    <div class="panel-h">Researcher Profile</div>
+                    <div class="profile-hero">
+                        <div class="avatar">D</div>
+                        <div>
+                            <div style="font-size:18px;font-weight:700;">Dr. Demo</div>
+                            <div style="font-size:12px;color:var(--dim);">demo@cortexiq.ai</div>
+                        </div>
+                    </div>
+                    <div class="form-group"><label class="label">Google Scholar</label><input class="input"
+                            value="scholar.google.com/citations?user=demoXYZ"></div>
+                    <div class="form-group"><label class="label">Institution</label><input class="input"
+                            value="MIT Brain & Cognitive Sciences"></div>
+                    <button class="btn btn-primary btn-full">Save Profile Details</button>
+                </div>
+                <div class="panel">
+                    <div class="panel-h">App Settings</div>
+                    <div class="form-group"><label class="label">Visual Theme</label><button
+                            class="btn btn-outline btn-full">Switch to Light Mode</button></div>
+                    <div class="form-group" style="margin-top:24px;"><label class="label">Session</label><button
+                            class="btn btn-danger btn-full" onclick="alert('Demo mode')">Terminate Session
+                            (Logout)</button></div>
+                    <div
+                        style="margin-top:24px;padding:12px;background:var(--input);border-radius:8px;font-size:11px;color:var(--dim);">
+                        Connected to CortexIQ demo cluster. This is a simulated environment for demonstration purposes.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Global State ──
+        const $ = id => document.getElementById(id);
+        const CHANNELS = ['Fp1', 'Fp2', 'F3', 'F4', 'C3', 'C4', 'O1', 'O2'];
+        const SFREQ = 256;
+        let studyReady = false;
+        let pipelineRan = false;
+
+        // ── Tab System ──
+        function tab(t) {
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => { if (el.textContent.toLowerCase().trim() === t) el.classList.add('active'); });
+            $(`t-${t}`).classList.add('active');
+        }
+
+        // ── EEG Signal Generator ──
+        function generateEEG(seconds, sfreq, nCh) {
+            const n = seconds * sfreq;
+            const data = [];
+            for (let ch = 0; ch < nCh; ch++) {
+                const row = [];
+                // Mix of brain rhythms
+                const deltaF = 1 + Math.random() * 2;
+                const thetaF = 4 + Math.random() * 3;
+                const alphaF = 8 + Math.random() * 4;
+                const betaF = 13 + Math.random() * 17;
+                const deltaA = 15 + Math.random() * 10;
+                const thetaA = 8 + Math.random() * 6;
+                const alphaA = (ch >= 6) ? 20 + Math.random() * 15 : 5 + Math.random() * 5; // Strong alpha in O1/O2
+                const betaA = 3 + Math.random() * 4;
+                for (let i = 0; i < n; i++) {
+                    const t = i / sfreq;
+                    let v = deltaA * Math.sin(2 * Math.PI * deltaF * t)
+                        + thetaA * Math.sin(2 * Math.PI * thetaF * t)
+                        + alphaA * Math.sin(2 * Math.PI * alphaF * t)
+                        + betaA * Math.sin(2 * Math.PI * betaF * t)
+                        + (Math.random() - 0.5) * 6; // noise
+                    row.push(v);
+                }
+                data.push(row);
+            }
+            return data;
+        }
+
+        // ── Plot EEG ──
+        function plotEEG(data, channels, sfreq, container, tmin = 0, tmax = 5) {
+            const startSamp = Math.floor(tmin * sfreq);
+            const endSamp = Math.floor(tmax * sfreq);
+            const times = [];
+            for (let i = startSamp; i < endSamp && i < data[0].length; i++) times.push(i / sfreq);
+
+            const traces = [];
+            const spacing = 80;
+            for (let ch = 0; ch < channels.length; ch++) {
+                const offset = ch * spacing;
+                const yData = [];
+                for (let i = startSamp; i < endSamp && i < data[ch].length; i++) yData.push(data[ch][i] + offset);
+                traces.push({
+                    x: times, y: yData,
+                    type: 'scatter', mode: 'lines',
+                    line: { width: 0.8, color: ch < 6 ? '#14b8a6' : '#06b6d4' },
+                    name: channels[ch],
+                    hoverinfo: 'name+y'
+                });
+            }
+
+            const tickvals = channels.map((_, i) => i * spacing);
+            Plotly.newPlot(container, traces, {
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+                margin: { t: 10, r: 20, b: 35, l: 50 },
+                xaxis: { title: { text: 'Time (s)', font: { size: 10, color: '#64748b' } }, color: '#64748b', gridcolor: '#1e293b', tickfont: { size: 9 } },
+                yaxis: { tickvals: tickvals, ticktext: channels, color: '#64748b', gridcolor: 'transparent', tickfont: { size: 9, color: '#14b8a6' } },
+                showlegend: false, hovermode: 'closest'
+            }, { displayModeBar: false, responsive: true });
+        }
+
+        // ── Simulate Upload ──
+        let eegData = null;
+        function simulateUpload() {
+            $('up-txt').textContent = 'Loading demo data...';
+            setTimeout(() => {
+                eegData = generateEEG(30, SFREQ, CHANNELS.length);
+                $('up-txt').textContent = '3 subjects loaded (demo)';
+                $('sub-list-container').classList.remove('hidden');
+                $('sub-list').innerHTML = ['sub_001_eyes_open.edf', 'sub_002_eyes_open.edf', 'sub_003_eyes_closed.edf'].map((n, i) =>
+                    `<div style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                <div style="font-size:12px;color:var(--dim);">${n}</div>
+                <span style="font-size:10px;color:var(--accent);">EDF • 8ch</span>
+            </div>`
+                ).join('');
+                $('study-form').classList.remove('hidden');
+                plotEEG(eegData, CHANNELS, SFREQ, 'plot-prev', 0, 5);
+                $('plot-range').textContent = '0.0s – 5.0s';
+                $('info-prev').innerHTML = `<div>Format: <span style="color:var(--accent)">EDF (European Data Format)</span></div>
+            <div>Channels: <span style="color:var(--accent)">8</span></div>
+            <div>Sampling Rate: <span style="color:var(--accent)">256 Hz</span></div>
+            <div>Duration: <span style="color:var(--accent)">30.0 s</span></div>`;
+
+                // Render mapping
+                $('mapping-list').innerHTML = CHANNELS.map((ch, i) =>
+                    `<div class="mapping-row"><span class="mapping-label">CH${i}</span><span style="font-size:10px;color:var(--accent);font-family:var(--mono);">${ch}</span></div>`
+                ).join('');
+
+                $('up-status').innerHTML = '<div class="alert alert-success" style="padding:8px;font-size:11px;">✓ 3 subjects loaded successfully. Configure and initialize study.</div>';
+            }, 800);
+        }
+
+        function showSavedStudies() {
+            $('btn-choice-new').classList.remove('active');
+            $('btn-choice-saved').classList.add('active');
+            $('new-study-area').classList.add('hidden');
+            $('saved-list').classList.remove('hidden');
+        }
+        function loadDemoStudy() { simulateUpload(); $('saved-list').classList.add('hidden'); $('new-study-area').classList.remove('hidden'); $('btn-choice-new').classList.add('active'); $('btn-choice-saved').classList.remove('active'); }
+
+        function initStudy() {
+            studyReady = true;
+            $('ana-header').classList.remove('hidden');
+            tab('analysis');
+        }
+
+        // ── Montage Rendering ──
+        const ELECTRODES_1020 = {
+            'Fp1': [35, 15], 'Fp2': [65, 15], 'F7': [18, 35], 'F3': [35, 35], 'Fz': [50, 35], 'F4': [65, 35], 'F8': [82, 35],
+            'T7': [10, 50], 'C3': [35, 50], 'Cz': [50, 50], 'C4': [65, 50], 'T8': [90, 50],
+            'P7': [18, 65], 'P3': [35, 65], 'Pz': [50, 65], 'P4': [65, 65], 'P8': [82, 65],
+            'O1': [35, 80], 'Oz': [50, 80], 'O2': [65, 80], 'A1': [5, 55]
+        };
+        (function renderMontage() {
+            const g = $('electrode-group');
+            if (!g) return;
+            for (const [name, [x, y]] of Object.entries(ELECTRODES_1020)) {
+                const isSelected = CHANNELS.includes(name);
+                const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 2.5);
+                c.setAttribute('class', isSelected ? 'electrode' : '');
+                if (!isSelected) { c.style.fill = 'var(--input)'; c.style.stroke = 'var(--border)'; c.style.strokeWidth = '0.8'; }
+                g.appendChild(c);
+                const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                t.setAttribute('x', x); t.setAttribute('y', parseFloat(y) + 5);
+                t.setAttribute('class', 'electrode-label');
+                t.textContent = name;
+                g.appendChild(t);
+            }
+        })();
+
+        // ── AI Chat System ──
+        const AI_RESPONSES = {
+            default: {
+                type: 'message',
+                text: "I can help you with EEG analysis. Try asking me to:\n• \"Run a standard preprocessing pipeline\"\n• \"Compute band power analysis\"\n• \"Show me the alpha rhythm\"\n• \"What's the dominant frequency?\"",
+            },
+            pipeline: {
+                type: 'pipeline',
+                text: "I'll set up a comprehensive EEG preprocessing and analysis pipeline for your resting state data. Here's what I recommend:",
+                steps: [
+                    { name: 'Band-pass Filter', desc: '0.5–45 Hz FIR filter to remove DC offset and high-frequency noise' },
+                    { name: 'Notch Filter', desc: '50 Hz notch filter to remove power line interference' },
+                    { name: 'Bad Channel Detection', desc: 'Z-score thresholding to identify noisy channels' },
+                    { name: 'ICA Artifact Removal', desc: 'FastICA decomposition — removing eye-blink and muscle components' },
+                    { name: 'PSD Computation', desc: 'Welch method: δ(1-4Hz), θ(4-8Hz), α(8-13Hz), β(13-30Hz), γ(30-45Hz)' },
+                ]
+            },
+            alpha: {
+                type: 'message',
+                text: "Looking at your data, I can see **strong alpha activity (8-13 Hz)** particularly in the occipital channels (O1, O2). This is consistent with a resting-state eyes-closed paradigm.\n\nThe alpha power is approximately **45% higher in O1/O2** compared to frontal channels, which is a normal posterior-dominant alpha pattern. Peak frequency is around **10.2 Hz**.",
+            },
+            frequency: {
+                type: 'message',
+                text: "Based on PSD analysis of your data:\n\n• **Dominant frequency**: 10.2 Hz (alpha band)\n• **Secondary peak**: 2.1 Hz (delta band)\n• **Total power**: 124.7 µV²/Hz\n\nThe alpha peak is particularly prominent in occipital channels, suggesting healthy resting-state neural oscillations.",
+            },
+            band: {
+                type: 'message',
+                text: "Here's the band power distribution across all channels:\n\n• **Delta (1-4 Hz)**: 32.1% — dominant during drowsiness\n• **Theta (4-8 Hz)**: 18.5% — moderate, normal range\n• **Alpha (8-13 Hz)**: 28.4% — strong posterior alpha\n• **Beta (13-30 Hz)**: 15.8% — low, consistent with relaxed state\n• **Gamma (30-45 Hz)**: 5.2% — minimal, as expected\n\nThe alpha/beta ratio of 1.8 suggests a relaxed but alert state.",
+            }
+        };
+
+        function matchResponse(input) {
+            const lower = input.toLowerCase();
+            if (lower.includes('pipeline') || lower.includes('preprocess') || lower.includes('run') || lower.includes('analyze')) return AI_RESPONSES.pipeline;
+            if (lower.includes('alpha') || lower.includes('rhythm')) return AI_RESPONSES.alpha;
+            if (lower.includes('frequency') || lower.includes('dominant') || lower.includes('peak')) return AI_RESPONSES.frequency;
+            if (lower.includes('band') || lower.includes('power') || lower.includes('spectrum')) return AI_RESPONSES.band;
+            return AI_RESPONSES.default;
+        }
+
+        function sendChat() {
+            const input = $('chat-in');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+
+            // User message
+            const chatBox = $('chat');
+            chatBox.innerHTML += `<div class="msg user">${msg}</div>`;
+
+            // Thinking animation
+            $('thinking').classList.remove('hidden');
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const response = matchResponse(msg);
+
+            setTimeout(() => {
+                $('thinking').classList.add('hidden');
+
+                // Format text with **bold** → <strong>
+                const formatted = response.text.replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--accent)">$1</strong>').replace(/\n/g, '<br>');
+                chatBox.innerHTML += `<div class="msg bot" style="animation:fadeIn 0.3s ease">${formatted}</div>`;
+
+                if (response.type === 'pipeline') {
+                    showPipeline(response.steps);
+                }
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1200 + Math.random() * 800);
+        }
+
+        // ── Pipeline System ──
+        function showPipeline(steps) {
+            const panel = $('pipe-panel');
+            panel.classList.remove('hidden');
+            const list = $('pipe-list');
+            list.innerHTML = '';
+            steps.forEach((s, i) => {
+                list.innerHTML += `<div class="step" id="step-${i}">
+            <div class="step-n">${i + 1}</div>
+            <div style="flex:1;">
+                <div style="font-weight:600;font-size:12px;">${s.name}</div>
+                <div style="font-size:10px;color:var(--dim);margin-top:2px;">${s.desc}</div>
+            </div>
+        </div>`;
+            });
+            $('pipe-log').textContent = 'Pipeline ready. Click "Run" to execute.';
+        }
+
+        function runPipeline() {
+            const steps = $('pipe-list').children;
+            if (!steps.length) return;
+            $('btn-run').disabled = true;
+            $('btn-run').textContent = 'Running...';
+
+            let i = 0;
+            const logs = [
+                '[00:00] Starting pipeline execution...',
+                '[00:01] Applying 0.5-45 Hz FIR band-pass filter (order=auto)...',
+                '[00:02] Filter applied. Signal DC offset removed.',
+                '[00:03] Applying 50 Hz notch filter (Q=30)...',
+                '[00:03] Power line interference suppressed.',
+                '[00:04] Running bad channel detection (z-threshold=3.5)...',
+                '[00:05] All channels within normal range. 0 bad channels detected.',
+                '[00:06] Running FastICA decomposition (n_components=8)...',
+                '[00:08] ICA converged in 47 iterations.',
+                '[00:08] Identified 2 artifact components: IC01 (eye-blink, r=0.92), IC03 (muscle, r=0.78)',
+                '[00:09] Artifact components removed. Reconstructing clean signal...',
+                '[00:10] Computing PSD using Welch method (nperseg=512, noverlap=256)...',
+                '[00:11] Band powers computed for all 8 channels.',
+                '[00:11] Pipeline complete. 5/5 steps executed successfully.'
+            ];
+            let logIdx = 0;
+
+            function nextStep() {
+                if (i >= steps.length) {
+                    $('pipe-fill').style.width = '100%';
+                    $('btn-run').textContent = '✓ Complete';
+                    pipelineRan = true;
+                    // If data exists, replot with "cleaned" signal (reduced noise)
+                    if (eegData) {
+                        eegData = generateEEG(30, SFREQ, CHANNELS.length); // new cleaner data
+                    }
+                    return;
+                }
+                // Activate step
+                if (i > 0) {
+                    steps[i - 1].classList.remove('active');
+                    steps[i - 1].classList.add('complete');
+                    steps[i - 1].querySelector('.step-n').textContent = '✓';
+                }
+                steps[i].classList.add('active');
+                $('pipe-fill').style.width = `${((i + 1) / steps.length) * 100}%`;
+
+                // Log
+                const logEl = $('pipe-log');
+                const logsToShow = Math.ceil((logIdx + logs.length / steps.length));
+                for (let l = logIdx; l < logsToShow && l < logs.length; l++) {
+                    logEl.textContent += '\n' + logs[l];
+                    logIdx = l + 1;
+                }
+                logEl.scrollTop = logEl.scrollHeight;
+
+                i++;
+                setTimeout(nextStep, 1200 + Math.random() * 600);
+            }
+            nextStep();
+        }
+
+        // ── Results Generation ──
+        function generateResults() {
+            $('gen-status').textContent = 'Generating...';
+
+            setTimeout(() => {
+                $('res-area').classList.remove('hidden');
+                $('gen-status').textContent = '✓ Report generated';
+
+                // 1. Global stats
+                $('res-global').innerHTML = `<table class="res-table">
+            <tr><th>Metric</th><th>Value</th><th>Unit</th></tr>
+            <tr><td>Mean Amplitude</td><td>0.42</td><td>µV</td></tr>
+            <tr><td>Std Deviation</td><td>18.73</td><td>µV</td></tr>
+            <tr><td>Min Amplitude</td><td>-62.41</td><td>µV</td></tr>
+            <tr><td>Max Amplitude</td><td>58.92</td><td>µV</td></tr>
+            <tr><td>Kurtosis</td><td>2.14</td><td>—</td></tr>
+            <tr><td>Skewness</td><td>-0.08</td><td>—</td></tr>
+            <tr><td>Total Duration</td><td>30.0</td><td>seconds</td></tr>
+        </table>`;
+
+                // 2. Band power
+                $('res-band').innerHTML = `<table class="res-table">
+            <tr><th>Band</th><th>Range</th><th>Mean Power (µV²/Hz)</th><th>Relative %</th></tr>
+            <tr><td style="color:var(--accent);font-weight:600">Delta</td><td>1–4 Hz</td><td>42.31</td><td>32.1%</td></tr>
+            <tr><td style="color:#8b5cf6;font-weight:600">Theta</td><td>4–8 Hz</td><td>24.38</td><td>18.5%</td></tr>
+            <tr><td style="color:#f59e0b;font-weight:600">Alpha</td><td>8–13 Hz</td><td>37.42</td><td>28.4%</td></tr>
+            <tr><td style="color:#3b82f6;font-weight:600">Beta</td><td>13–30 Hz</td><td>20.81</td><td>15.8%</td></tr>
+            <tr><td style="color:#ec4899;font-weight:600">Gamma</td><td>30–45 Hz</td><td>6.85</td><td>5.2%</td></tr>
+        </table>`;
+
+                // 3. PSD Plot
+                const freqs = [];
+                const psd = [];
+                for (let f = 0.5; f <= 45; f += 0.5) {
+                    freqs.push(f);
+                    // Simulate PSD with peaks at delta, alpha
+                    let p = 20 / (1 + f * 0.8); // 1/f baseline
+                    if (f > 1 && f < 4) p += 15 * Math.exp(-Math.pow(f - 2, 2) / 2); // delta peak
+                    if (f > 8 && f < 13) p += 25 * Math.exp(-Math.pow(f - 10.2, 2) / 1.5); // alpha peak
+                    p += (Math.random() - 0.5) * 2;
+                    psd.push(Math.max(0.1, p));
+                }
+                Plotly.newPlot('res-psd', [{
+                    x: freqs, y: psd, type: 'scatter', mode: 'lines',
+                    fill: 'tozeroy',
+                    line: { color: '#14b8a6', width: 1.5 },
+                    fillcolor: 'rgba(20,184,166,0.1)'
+                }], {
+                    paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+                    margin: { t: 20, r: 20, b: 40, l: 50 },
+                    xaxis: { title: { text: 'Frequency (Hz)', font: { size: 11, color: '#64748b' } }, color: '#64748b', gridcolor: '#1e293b', tickfont: { size: 9 } },
+                    yaxis: { title: { text: 'Power (µV²/Hz)', font: { size: 11, color: '#64748b' } }, color: '#64748b', gridcolor: '#1e293b', tickfont: { size: 9 } },
+                    annotations: [
+                        { x: 2, y: psd[3], text: 'δ', showarrow: false, font: { color: '#14b8a6', size: 14, weight: 'bold' }, yshift: 15 },
+                        { x: 10.2, y: 25, text: 'α peak', showarrow: true, arrowhead: 2, arrowcolor: '#f59e0b', font: { color: '#f59e0b', size: 11 }, ax: 40, ay: -30 }
+                    ]
+                }, { displayModeBar: false, responsive: true });
+
+                // 4. Correlation Matrix
+                const corrData = [];
+                for (let i = 0; i < CHANNELS.length; i++) {
+                    const row = [];
+                    for (let j = 0; j < CHANNELS.length; j++) {
+                        if (i === j) row.push(1.0);
+                        else {
+                            // Simulate higher correlation between nearby channels
+                            const dist = Math.abs(i - j);
+                            row.push(Math.max(-0.2, 0.9 - dist * 0.15 + (Math.random() - 0.5) * 0.15));
+                        }
+                    }
+                    corrData.push(row);
+                }
+                Plotly.newPlot('res-corr', [{
+                    z: corrData, x: CHANNELS, y: CHANNELS,
+                    type: 'heatmap',
+                    colorscale: [[0, '#1e293b'], [0.5, '#0f172a'], [0.75, '#14b8a6'], [1, '#06b6d4']],
+                    zmin: -0.3, zmax: 1,
+                    text: corrData.map(r => r.map(v => v.toFixed(2))),
+                    texttemplate: '%{text}',
+                    textfont: { size: 10, color: '#f8fafc' }
+                }], {
+                    paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+                    margin: { t: 20, r: 20, b: 60, l: 60 },
+                    xaxis: { color: '#64748b', tickfont: { size: 10, color: '#14b8a6' } },
+                    yaxis: { color: '#64748b', tickfont: { size: 10, color: '#14b8a6' }, autorange: 'reversed' }
+                }, { displayModeBar: false, responsive: true });
+
+                // 5. Interpretation
+                $('res-interp').innerHTML = `<p>The EEG recording shows a healthy <strong style="color:var(--accent)">resting-state pattern</strong> across 8 channels with expected posterior-dominant alpha rhythm.</p>
+        <p style="margin-top:8px;"><strong style="color:var(--accent)">Key Findings:</strong></p>
+        <ul style="margin:8px 0;padding-left:20px;">
+            <li>Strong <strong style="color:#f59e0b">alpha activity (10.2 Hz peak)</strong> in occipital channels (O1, O2), reflecting normal posterior dominant rhythm.</li>
+            <li>Alpha power is <strong style="color:var(--accent)">45% higher</strong> in posterior vs. frontal channels — consistent with eyes-closed resting state.</li>
+            <li>Delta activity (32.1%) within normal range for relaxed wakefulness.</li>
+            <li>Low beta/gamma ratio suggests minimal muscle artifact post-ICA cleaning.</li>
+            <li>Cross-channel correlations show expected spatial patterns — high coherence between ipsilateral pairs (F3-C3: r=0.76, F4-C4: r=0.74).</li>
+        </ul>
+        <p style="margin-top:8px;"><strong style="color:var(--accent)">Clinical Significance:</strong> No abnormal patterns detected. The recording quality is suitable for further group-level analysis and condition comparisons.</p>`;
+            }, 1500);
+        }
+
+        // ── Pre-seed a suggested prompt ──
+        setTimeout(() => {
+            $('chat-in').placeholder = 'Try: "Run a preprocessing pipeline"';
+        }, 500);
+    </script>
+</body>
+
+</html>
