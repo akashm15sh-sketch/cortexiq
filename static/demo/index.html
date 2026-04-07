@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CortexIQ — Multi-Modal Neural Analysis Demo</title>
-    <meta name="description" content="Interactive demo for EEG, fMRI, EMG, and MEG analysis.">
+    <title>CortexIQ — Neuro-Imaging Platform Demo</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
         :root {
@@ -22,7 +21,7 @@
             --red: #ef4444;
             --blue: #3b82f6;
             --purple: #8b5cf6;
-            --font: Inter, Arial, sans-serif;
+            --font: Inter, -apple-system, sans-serif;
             --mono: 'JetBrains Mono', monospace;
             --radius: 12px;
         }
@@ -38,7 +37,7 @@
             background: var(--bg);
             color: var(--text);
             line-height: 1.5;
-            overflow-x: hidden;
+            overflow: hidden;
         }
 
         @keyframes fadeIn {
@@ -256,10 +255,6 @@
             outline: none;
         }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
-
         .label {
             display: block;
             font-size: 10px;
@@ -387,7 +382,71 @@
             transition: 0.3s;
         }
 
-        /* Results table */
+        /* FSLeyes Style Ortho View */
+        .ortho-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 4px;
+            background: #000;
+            border-radius: 8px;
+            padding: 4px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .ortho-slice {
+            background: #111;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid #222;
+        }
+
+        .ortho-slice-label {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-size: 10px;
+            color: #fff;
+            font-weight: 800;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0 4px;
+            z-index: 10;
+            border-radius: 2px;
+        }
+
+        .ortho-value {
+            position: absolute;
+            bottom: 4px;
+            right: 6px;
+            font-size: 10px;
+            color: var(--accent);
+            font-family: var(--mono);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 10;
+        }
+
+        .ortho-crosshair-h {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: rgba(20, 184, 166, 0.3);
+            pointer-events: none;
+        }
+
+        .ortho-crosshair-v {
+            position: absolute;
+            height: 100%;
+            width: 1px;
+            background: rgba(20, 184, 166, 0.3);
+            pointer-events: none;
+        }
+
         .res-table {
             width: 100%;
             border-collapse: collapse;
@@ -409,46 +468,6 @@
             color: var(--dim);
         }
 
-        /* Montage & Viz */
-        .viz-container {
-            height: 100%;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #plot-area {
-            flex: 1;
-            min-height: 0;
-        }
-
-        .montage-svg {
-            width: 100%;
-            height: 260px;
-        }
-
-        .electrode {
-            fill: var(--border);
-            stroke: var(--dim);
-            stroke-width: 0.5;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .electrode.active {
-            fill: var(--accent);
-            stroke: var(--bg);
-        }
-
-        .electrode-label {
-            font-size: 3px;
-            dominant-baseline: middle;
-            text-anchor: middle;
-            fill: var(--dim);
-            pointer-events: none;
-        }
-
-        /* Guided Tutorial Bubble */
         .hint-bubble {
             position: fixed;
             bottom: 30px;
@@ -461,10 +480,10 @@
             font-weight: 700;
             box-shadow: 0 10px 30px rgba(20, 184, 166, 0.4);
             z-index: 1000;
-            animation: float 4s infinite;
+            animation: bounce 3s infinite;
         }
 
-        @keyframes float {
+        @keyframes bounce {
 
             0%,
             100% {
@@ -472,29 +491,15 @@
             }
 
             50% {
-                transform: translateY(-10px)
+                transform: translateY(-8px)
             }
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px;
         }
     </style>
 </head>
 
 <body>
     <div class="demo-banner">
-        🧪 MODE: INTERACTIVE INVESTOR PREVIEW — Multi-Modal Neural Analytics
+        🧪 MODE: INTERACTIVE INVESTOR PREVIEW — FSL & multi-modal processing enabled
         <a href="/investor">EXIT DEMO</a>
     </div>
 
@@ -510,26 +515,24 @@
         <div class="tabs">
             <div class="tab active" data-tab="study">1. Study Setup</div>
             <div class="tab" data-tab="analysis">2. AI Analysis</div>
-            <div class="tab" data-tab="results">3. Power Reports</div>
+            <div class="tab" data-tab="results">3. Final Reports</div>
         </div>
 
         <!-- STUDY SETUP TAB -->
-        <div id="tab-study" class="tab-content active" style="overflow-y: auto; padding-top: 20px;">
+        <div id="tab-study" class="tab-content active" style="padding-top: 20px;">
             <div class="grid">
                 <div class="panel">
                     <div class="panel-h">Modality Selection</div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 24px;">
                         <button class="btn btn-outline active" data-mod="EEG">EEG Analysis</button>
-                        <button class="btn btn-outline" data-mod="fMRI">fMRI Mapping</button>
+                        <button class="btn btn-outline" data-mod="fMRI">fMRI (FSL Enabled)</button>
                         <button class="btn btn-outline" data-mod="EMG">EMG Kinematics</button>
                         <button class="btn btn-outline" data-mod="MEG">MEG SQUIDs</button>
                     </div>
 
                     <div id="upload-panel">
                         <div class="panel-h">Sample Data Repository</div>
-                        <div id="sample-list" style="margin-bottom: 16px;">
-                            <!-- Populated by JS -->
-                        </div>
+                        <div id="sample-list" style="margin-bottom: 16px;"></div>
                         <div class="upload-box" onclick="loadSampleData()">
                             <div style="font-size: 24px; color: var(--accent);">+</div>
                             <div style="font-size: 12px; margin-top: 8px; color: var(--dim);">Import Selected Scenario
@@ -544,28 +547,49 @@
                             <input class="input" id="study-name" placeholder="Name your study...">
                         </div>
                         <div style="display:flex; gap:10px;">
-                            <div style="flex:1">
-                                <label class="label">Subjects</label>
-                                <input class="input" id="meta-subj" value="1" readonly>
-                            </div>
-                            <div style="flex:1">
-                                <label class="label">Sampling (Hz)</label>
-                                <input class="input" id="meta-sfreq" value="256" readonly>
-                            </div>
+                            <div style="flex:1"><label class="label">Subjects</label><input class="input" value="1"
+                                    readonly></div>
+                            <div style="flex:1"><label class="label">Sampling</label><input class="input"
+                                    id="meta-sfreq" value="256" readonly></div>
                         </div>
                         <button class="btn btn-primary btn-full" style="margin-top:20px;"
                             onclick="goToAnalysis()">Initialize AI Core</button>
                     </div>
                 </div>
 
-                <div class="viz-container">
-                    <div class="panel" style="flex:1; display:flex; flex-direction:column;">
-                        <div class="panel-h" id="viz-title">Signal Preview</div>
-                        <div id="plot-area"></div>
-                        <div id="montage-area" class="hidden"
-                            style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
-                            <div class="panel-h">Channel Geometry</div>
-                            <svg viewBox="0 0 100 100" class="montage-svg" id="montage-svg"></svg>
+                <div class="panel" style="flex:1; display:flex; flex-direction:column; min-height: 0;">
+                    <div class="panel-h" id="viz-title">Signal Preview</div>
+                    <div id="plot-container" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                        <div id="plot-area" style="flex: 1;"></div>
+                        <div id="fsl-ortho" class="ortho-container hidden">
+                            <div class="ortho-slice" onmousemove="updateOrthoValue(event, 'AX')">
+                                <span class="ortho-slice-label">AXIAL</span>
+                                <div class="ortho-crosshair-h" style="top:50%"></div>
+                                <div class="ortho-crosshair-v" style="left:50%"></div>
+                                <canvas id="canvas-ax"></canvas>
+                                <span class="ortho-value" id="val-ax">v: 0.00</span>
+                            </div>
+                            <div class="ortho-slice" onmousemove="updateOrthoValue(event, 'COR')">
+                                <span class="ortho-slice-label">CORONAL</span>
+                                <div class="ortho-crosshair-h" style="top:40%"></div>
+                                <div class="ortho-crosshair-v" style="left:50%"></div>
+                                <canvas id="canvas-cor"></canvas>
+                                <span class="ortho-value" id="val-cor">v: 0.00</span>
+                            </div>
+                            <div class="ortho-slice" onmousemove="updateOrthoValue(event, 'SAG')">
+                                <span class="ortho-slice-label">SAGITTAL</span>
+                                <div class="ortho-crosshair-h" style="top:50%"></div>
+                                <div class="ortho-crosshair-v" style="left:45%"></div>
+                                <canvas id="canvas-sag"></canvas>
+                                <span class="ortho-value" id="val-sag">v: 0.00</span>
+                            </div>
+                            <div class="ortho-slice">
+                                <div style="font-size: 10px; color: var(--dim); padding: 10px;">
+                                    <div style="color:var(--accent); font-weight: 700; margin-bottom: 4px;">FSLeyes
+                                        Overlay</div>
+                                    T1 structural: MNI152<br>Functional: Z-Stat Contrast<br>Threshold: 2.3 - 5.0
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -578,8 +602,8 @@
                 <div class="panel" style="display:flex; flex-direction:column; margin-bottom: 0;">
                     <div class="panel-h">CortexIQ AI Core (v4.2.0)</div>
                     <div class="chat-box" id="chat-stream">
-                        <div class="msg bot">System ready. Modality detected. Please propose an analysis pipeline or ask
-                            questions about the transients.</div>
+                        <div class="msg bot">System ready. Modality detected. Propose an analysis pipeline (e.g. 'Run
+                            FSL FEAT') or ask questions about thresholds.</div>
                     </div>
                     <div id="typing-indicator" class="hidden" style="padding: 10px 20px;">
                         <div class="typing">
@@ -589,8 +613,7 @@
                         </div>
                     </div>
                     <div style="padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
-                        <input class="input" id="chat-input"
-                            placeholder="Type 'Run the pipeline' to start automation..."
+                        <input class="input" id="chat-input" placeholder="Try: 'Run the FSL pipeline'..."
                             onkeydown="if(event.key==='Enter')handleChat()">
                         <button class="btn btn-primary" onclick="handleChat()">Send</button>
                     </div>
@@ -614,28 +637,24 @@
         <!-- RESULTS TAB -->
         <div id="tab-results" class="tab-content" style="overflow-y:auto; padding-top: 20px;">
             <div class="panel">
-                <div class="panel-h">Final Intelligence Report</div>
+                <div class="panel-h">Intelligence Findings Report</div>
                 <div id="results-loader" style="text-align:center; padding: 60px;">
                     <button class="btn btn-primary" onclick="generateReport()">Synthesize Findings</button>
                 </div>
                 <div id="results-view" class="hidden">
                     <div class="grid">
-                        <div>
+                        <div style="overflow-y: auto;">
                             <div class="panel-h">Statistical Summary</div>
                             <div id="stats-table-wrap"></div>
-                            <div class="panel-h" style="margin-top:24px;">AI Interpretation</div>
+                            <div class="panel-h" style="margin-top:24px;">FSL Group Level Interpretation</div>
                             <div id="ai-summary"
                                 style="font-size:13px; color:var(--dim); line-height:1.7; background:var(--input); padding:16px; border-radius:8px; border:1px solid var(--border);">
                             </div>
                         </div>
-                        <div>
-                            <div class="panel-h" id="res-viz-title">Spectral Density</div>
-                            <div id="res-plot" style="height: 350px;"></div>
-                            <div style="display:flex; gap:10px; margin-top: 20px;">
-                                <button class="btn btn-outline btn-sm" onclick="alert('Exporting PDF...')">Export
-                                    PDF</button>
-                                <button class="btn btn-outline btn-sm" onclick="alert('Exporting BIDS...')">Export BIDS
-                                    Zip</button>
+                        <div style="display: flex; flex-direction: column;">
+                            <div class="panel-h">Spatial Activation View</div>
+                            <div id="results-viz-container"
+                                style="flex: 1; min-height: 400px; background: #000; border-radius: 8px; position: relative; overflow: hidden;">
                             </div>
                         </div>
                     </div>
@@ -644,62 +663,38 @@
         </div>
     </div>
 
-    <div class="hint-bubble" id="tutorial-hint">Select a Modality and Click 'Import' to start!</div>
+    <div class="hint-bubble" id="tutorial-hint">Select 'fMRI' and click 'Import' to see FSL in action!</div>
 
     <script>
-        // --- DATA & STATE ---
         let currentMod = 'EEG';
         let dataLoaded = false;
-        let pipelineReady = false;
-        let eegData = [];
-        const CHANNELS_EEG = ['Fp1', 'Fp2', 'F3', 'F4', 'C3', 'C4', 'P3', 'P4', 'O1', 'O2', 'F7', 'F8', 'T7', 'T8'];
         const SAMPLES = {
-            'EEG': [
-                { id: 'eeg_01', name: 'Alpha Resting State', desc: 'Eyes closed, posterior dominant rhythm detection.' },
-                { id: 'eeg_02', name: 'P300 Oddball Paradigm', desc: 'Event-related potentials in attention study.' }
-            ],
-            'fMRI': [
-                { id: 'fmri_01', name: 'Motor Visual Block', desc: 'Blood-Oxygen-Level-Dependent (BOLD) activation.' }
-            ],
-            'EMG': [
-                { id: 'emg_01', name: 'Bicep Contraction (High Load)', desc: 'Surface EMG burst analysis.' }
-            ],
-            'MEG': [
-                { id: 'meg_01', name: 'Somatosensory Evoked Fields', desc: 'Superconducting Quantum Interference Device data.' }
-            ]
+            'EEG': [{ id: 'eeg_01', name: 'Alpha Resting State', desc: 'Eyes closed, posterior dominant rhythm detection.' }],
+            'fMRI': [{ id: 'fmri_01', name: 'Visual Task (FSL FEAT)', desc: 'Full FSL pipeline from MCFLIRT to Z-Stats.' }],
+            'EMG': [{ id: 'emg_01', name: 'Muscle Burst Analysis', desc: 'Bicep contraction fatigue study.' }],
+            'MEG': [{ id: 'meg_01', name: 'Somatosensory Evoked', desc: 'High-res magnetic field mapping.' }]
         };
-
         const PIPELINES = {
-            'EEG': ['Band-pass Filter (0.5-45Hz)', 'Line Noise Multi-Notch', 'Artifact ICA Component Rejection', 'PSD Feature Extraction'],
-            'fMRI': ['Slice Timing Correction', 'Realignment & Motion Correction', 'Normalization (MNI Space)', 'GLM Activation Mapping'],
-            'EMG': ['DC Offset Removal', 'Full-wave Rectification', 'RMS Envelope Computation', 'Mean/Median Freq Calculation'],
-            'MEG': ['MaxFilter Signal Space Separation', 'Forward Solution Generation', 'MNE Source Reconstruction', 'Dics Beamforming']
+            'EEG': ['Band-pass 0.5-45Hz', 'Multi-Notch filter', 'ICA Artifact Rejection', 'PSD Computation'],
+            'fMRI': ['FSL MCFLIRT (Motion Correction)', 'FSL BET (Brain Extraction)', 'FSL SUSAN (Spatial Smoothing)', 'FSL FEAT (GLM Analysis)', 'FSL FLIRT (Registration)'],
+            'EMG': ['DC Removal', 'Rectification', 'RMS Envelope', 'Median Frequency'],
+            'MEG': ['Signal Space Separation', 'Forward Solution', 'Beamforming Source Calc']
         };
 
-        // --- CORE LOGIC ---
         function setModality(m) {
             currentMod = m;
             document.querySelectorAll('[data-mod]').forEach(b => b.classList.toggle('active', b.dataset.mod === m));
-            updateSampleList();
-
-            // Reset state
-            dataLoaded = false;
-            document.getElementById('meta-panel').classList.add('hidden');
-            document.getElementById('upload-panel').classList.remove('hidden');
-            document.getElementById('montage-area').classList.add('hidden');
-            document.getElementById('status-tag').textContent = 'Modality Selected';
-            document.getElementById('tutorial-hint').textContent = `Step 1: Click 'Import' for ${m} Sample Data`;
-            Plotly.purge('plot-area');
-        }
-
-        function updateSampleList() {
             const wrap = document.getElementById('sample-list');
-            wrap.innerHTML = SAMPLES[currentMod].map((s, i) => `
-                <div style="padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--input); cursor:pointer; margin-bottom:8px;" onclick="this.style.borderColor='var(--accent)'">
+            wrap.innerHTML = SAMPLES[m].map(s => `
+                <div style="padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--input); margin-bottom:8px;">
                     <div style="font-weight:700; font-size:12px; color:var(--accent)">${s.name}</div>
                     <div style="font-size:10px; color:var(--dim)">${s.desc}</div>
                 </div>
             `).join('');
+            document.getElementById('plot-area').classList.remove('hidden');
+            document.getElementById('fsl-ortho').classList.add('hidden');
+            Plotly.purge('plot-area');
+            document.getElementById('tutorial-hint').textContent = `Import ${m} data to continue!`;
         }
 
         function loadSampleData() {
@@ -708,109 +703,62 @@
                 dataLoaded = true;
                 document.getElementById('upload-panel').classList.add('hidden');
                 document.getElementById('meta-panel').classList.remove('hidden');
-                document.getElementById('study-name').value = SAMPLES[currentMod][0].name + " Session";
-                document.getElementById('status-tag').textContent = 'Data Buffered';
-
-                if (currentMod === 'EEG') renderEEGPlot();
-                else if (currentMod === 'fMRI') renderfMRIPlot();
-                else if (currentMod === 'EMG') renderEMGPlot();
-                else if (currentMod === 'MEG') renderMEGPlot();
-
-                document.getElementById('tutorial-hint').textContent = "Step 2: Initialize AI Core to start Analysis";
-            }, 800);
+                document.getElementById('study-name').value = SAMPLES[currentMod][0].name;
+                document.getElementById('status-tag').textContent = 'Buffered';
+                if (currentMod === 'fMRI') renderfMRIOrtho();
+                else renderStandardPlot();
+            }, 600);
         }
 
-        // --- VISUALIZATIONS ---
-        function renderEEGPlot() {
-            const traces = [];
-            for (let i = 0; i < 8; i++) {
-                const y = Array.from({ length: 1000 }, (_, t) => Math.sin(t * 0.1) * 10 + Math.random() * 20 + (i * 100));
-                traces.push({ y, type: 'scatter', mode: 'lines', name: CHANNELS_EEG[i], line: { color: i % 2 ? '#14b8a6' : '#3b82f6', width: 1 } });
-            }
-            Plotly.newPlot('plot-area', traces, {
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                margin: { t: 0, r: 0, b: 30, l: 40 },
-                xaxis: { color: '#64748b', gridcolor: '#1e293b' },
-                yaxis: { color: '#64748b', gridcolor: '#1e293b', showticklabels: false },
-                showlegend: false
-            }, { responsive: true, displayModeBar: false });
-
-            document.getElementById('montage-area').classList.remove('hidden');
-            renderMontage();
+        function renderfMRIOrtho() {
+            document.getElementById('plot-area').classList.add('hidden');
+            document.getElementById('fsl-ortho').classList.remove('hidden');
+            ['ax', 'cor', 'sag'].forEach(s => drawBrainSlice(s));
+            document.getElementById('tutorial-hint').textContent = "Go to 'AI Analysis' and ask to 'Run FSL'";
         }
 
-        function renderMontage() {
-            const svg = document.getElementById('montage-svg');
-            svg.innerHTML = '<circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="1.5" />';
-            const nodes = [[20, 30], [80, 30], [50, 15], [50, 50], [20, 70], [80, 70], [35, 50], [65, 50]];
-            nodes.forEach((n, i) => {
-                const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                c.setAttribute("cx", n[0]); c.setAttribute("cy", n[1]); c.setAttribute("r", "2.5");
-                c.setAttribute("class", "electrode active");
-                svg.appendChild(c);
+        function drawBrainSlice(id) {
+            const canvas = document.getElementById('canvas-' + id);
+            const ctx = canvas.getContext('2d');
+            canvas.width = 200; canvas.height = 200;
+            ctx.fillStyle = "#111"; ctx.fillRect(0, 0, 200, 200);
+            ctx.beginPath();
+            ctx.ellipse(100, 100, 70, 85, 0, 0, 2 * Math.PI);
+            ctx.strokeStyle = "#444"; ctx.stroke();
+            // Mock blobs
+            ctx.fillStyle = "rgba(255, 100, 0, 0.4)";
+            ctx.beginPath(); ctx.arc(100, 80, 20, 0, 2 * Math.PI); ctx.fill();
+        }
+
+        function updateOrthoValue(e, plane) {
+            const el = document.getElementById('val-' + plane.toLowerCase());
+            const val = (Math.random() * 5 + 1.2).toFixed(2);
+            el.textContent = `v: ${val} (Z)`;
+        }
+
+        function renderStandardPlot() {
+            Plotly.newPlot('plot-area', [{ y: Array.from({ length: 100 }, () => Math.random()), line: { color: '#14b8a6' } }], {
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', margin: { t: 10, r: 10, b: 30, l: 30 },
+                xaxis: { gridcolor: '#1e293b' }, yaxis: { gridcolor: '#1e293b' }
             });
-        }
-
-        function renderfMRIPlot() {
-            const z = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => Math.random() * 10));
-            Plotly.newPlot('plot-area', [{ z, type: 'heatmap', colorscale: [[0, '#0f172a'], [1, '#14b8a6']] }], {
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                margin: { t: 0, r: 0, b: 0, l: 0 },
-                xaxis: { visible: false }, yaxis: { visible: false }
-            }, { responsive: true, displayModeBar: false });
-        }
-
-        function renderEMGPlot() {
-            const y = Array.from({ length: 1000 }, (_, t) => Math.random() * 100 * Math.sin(t * 0.05));
-            Plotly.newPlot('plot-area', [{ y, type: 'scatter', line: { color: '#ef4444' } }], {
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', margin: { t: 10, r: 10, b: 30, l: 40 },
-                xaxis: { color: '#64748b', gridcolor: '#1e293b' }, yaxis: { color: '#64748b' }
-            }, { responsive: true, displayModeBar: false });
-        }
-
-        function renderMEGPlot() {
-            const traces = Array.from({ length: 5 }, (_, i) => ({
-                y: Array.from({ length: 100 }, () => Math.random() * 10 + i * 20),
-                type: 'scatter', mode: 'lines', line: { width: 1, color: '#8b5cf6' }
-            }));
-            Plotly.newPlot('plot-area', traces, {
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', margin: { t: 0, r: 0, b: 20, l: 20 },
-                xaxis: { visible: false }, yaxis: { visible: false }
-            }, { responsive: true, displayModeBar: false });
-        }
-
-        // --- NAVIGATION & CHAT ---
-        function tab(name) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + name));
-        }
-
-        function goToAnalysis() {
-            tab('analysis');
-            document.getElementById('tutorial-hint').textContent = "Step 3: Type 'Run the Pipeline' in the Chat!";
-            document.getElementById('status-tag').textContent = 'AI Core Active';
         }
 
         function handleChat() {
             const input = document.getElementById('chat-input');
-            const val = input.value.trim().toLowerCase();
+            const val = input.value.toLowerCase();
             if (!val) return;
-
             addMsg('user', input.value);
             input.value = '';
             document.getElementById('typing-indicator').classList.remove('hidden');
-
             setTimeout(() => {
                 document.getElementById('typing-indicator').classList.add('hidden');
-                if (val.includes('run') || val.includes('pipeline') || val.includes('analyze')) {
-                    addMsg('bot', `Preparing ${currentMod} automation sequence based on your study metadata. Generating 4 priority steps...`);
+                if (val.includes('fsl') || val.includes('run') || val.includes('pipeline')) {
+                    addMsg('bot', `Modality fMRI detected. Initializing FSL FEAT (v6.0.0). Loading 5 processing blocks into the queue...`);
                     preparePipeline();
-                } else if (val.includes('hello') || val.includes('hi')) {
-                    addMsg('bot', `Hello! I am ready to process your ${currentMod} data. Shall we begin the pipeline?`);
                 } else {
-                    addMsg('bot', `Acknowledged. For this ${currentMod} session, I recommend starting with 'Run the pipeline' to clean artifacts.`);
+                    addMsg('bot', `Ready. For ${currentMod}, I recommend executing the automation pipeline to see results.`);
                 }
-            }, 1000);
+            }, 800);
         }
 
         function addMsg(who, text) {
@@ -820,87 +768,81 @@
         }
 
         function preparePipeline() {
-            const wrap = document.getElementById('pipeline-steps');
             const steps = PIPELINES[currentMod];
-            wrap.innerHTML = steps.map((s, i) => `
-                <div class="step" id="step-${i}">
-                    <div class="step-n">${i + 1}</div>
-                    <div>${s}</div>
-                </div>
+            document.getElementById('pipeline-steps').innerHTML = steps.map((s, i) => `
+                <div class="step" id="step-${i}"><div class="step-n">${i + 1}</div><div>${s}</div></div>
             `).join('');
             document.getElementById('run-pipe-btn').classList.remove('hidden');
-            document.getElementById('tutorial-hint').textContent = "Step 4: Click 'Execute Pipeline' to process data";
         }
 
         async function executePipeline() {
             const btn = document.getElementById('run-pipe-btn');
-            btn.disabled = true;
-            btn.textContent = "Processing Signal...";
-
+            btn.disabled = true; btn.textContent = "Processing Signal...";
             const steps = PIPELINES[currentMod];
             for (let i = 0; i < steps.length; i++) {
-                const el = document.getElementById(`step-${i}`);
-                el.classList.add('active');
-                await new Promise(r => setTimeout(r, 1200));
-                el.classList.remove('active');
-                el.classList.add('complete');
+                document.getElementById(`step-${i}`).classList.add('active');
+                await new Promise(r => setTimeout(r, 1000));
+                document.getElementById(`step-${i}`).classList.replace('active', 'complete');
                 document.getElementById('pipe-progress').style.width = ((i + 1) / steps.length * 100) + "%";
             }
-
-            btn.textContent = "✓ Pipeline Complete";
-            document.getElementById('status-tag').textContent = 'Intelligence Ready';
-            addMsg('bot', `Success. ${currentMod} data synthesized. Deep spectral features are available in the Results tab.`);
-            document.getElementById('tutorial-hint').textContent = "Final Step: Go to 'Power Reports' to see findings!";
+            btn.textContent = "✓ Complete";
+            addMsg('bot', `Pipeline complete. Registration to MNI152 successful. Z-Stat reports generated in the Results tab.`);
         }
 
         function generateReport() {
             document.getElementById('results-loader').classList.add('hidden');
             document.getElementById('results-view').classList.remove('hidden');
 
-            // Stats logic per modality
-            const stats = {
-                'EEG': [['Mean Alpha Power', '22.4', 'µV²'], ['Beta Latency', '112', 'ms'], ['Subject SNR', '18.5', 'dB']],
-                'fMRI': [['Max Voxel Signal', '+4.2%', 'BOLD'], ['Contrast Ratio', '1.85', '—'], ['Active Clusters', '14', 'ROI']],
-                'EMG': [['Peak Root Mean Square', '0.84', 'mV'], ['Median Frequency', '95.2', 'Hz'], ['Muscle Fatigue Index', '0.12', '—']],
-                'MEG': [['Mag. Field Strength', '4.5', 'fT'], ['Dipole Confidence', '98%', '—'], ['Channel Coherence', '0.62', '—']]
-            }[currentMod];
+            const stats = currentMod === 'fMRI' ?
+                [['Peak Z-Score', '5.42', 'Z'], ['Activation Vol', '3250', 'mm³'], ['Clustered P', '0.00012', '<.05']] :
+                [['Mean Power', '22.1', 'µV²'], ['SNR', '14.2', 'dB'], ['Latency', '110', 'ms']];
 
             document.getElementById('stats-table-wrap').innerHTML = `
                 <table class="res-table">
                     <tr><th>Metric</th><th>Synthesized Value</th><th>Unit</th></tr>
                     ${stats.map(s => `<tr><td>${s[0]}</td><td style="color:var(--accent)">${s[1]}</td><td>${s[2]}</td></tr>`).join('')}
-                </table>
-            `;
+                </table>`;
 
-            document.getElementById('ai-summary').innerHTML = `
-                <b>Modality: ${currentMod} Intelligence Scan</b><br><br>
-                Analysis of <i>${SAMPLES[currentMod][0].name}</i> indicates significant transients in the expected regions. 
-                Spatial mapping shows a confidence level of 
-                <span style="color:var(--accent)">94.2%</span>. 
-                No critical noise artifacts remain post-pipeline.
-            `;
+            document.getElementById('ai-summary').innerHTML = currentMod === 'fMRI' ?
+                `FSL FEAT identified significant clusters in the <b>Visual Cortex (V1/V2)</b> corresponding to the task triggers. Contrast [1 -1] shows robust activation with Z > 3.1 thresholding.` :
+                `Standardized analysis indicates high signal coherence in the target frequency bands.`;
 
-            renderResultsViz();
-            document.getElementById('tutorial-hint').classList.add('hidden');
+            if (currentMod === 'fMRI') renderFSLeyesResults();
+            else renderStandardResults();
         }
 
-        function renderResultsViz() {
-            const title = document.getElementById('res-viz-title');
-            if (currentMod === 'fMRI') {
-                title.textContent = 'Activation Cluster Projection';
-                const z = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => Math.random() * 5));
-                Plotly.newPlot('res-plot', [{ z, type: 'heatmap', colorscale: 'Hot' }], { paper_bgcolor: 'transparent', margin: { t: 0, r: 0, b: 0, l: 0 } });
-            } else {
-                title.textContent = 'Spectral Power Density';
-                const y = Array.from({ length: 100 }, (_, t) => Math.exp(-t / 20) * 100 + Math.random() * 5);
-                Plotly.newPlot('res-plot', [{ y, fill: 'tozeroy', line: { color: '#14b8a6' } }], { paper_bgcolor: 'transparent', margin: { t: 0, r: 0, b: 30, l: 40 } });
-            }
+        function renderFSLeyesResults() {
+            const container = document.getElementById('results-viz-container');
+            container.innerHTML = `
+                <div style="padding:10px; height:100%; display:flex; flex-direction:column;">
+                    <div style="flex:1; background:#000; border:1px solid #333; display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px;">
+                        <iframe src="about:blank" style="width:100%; height:100%; border:0; background:radial-gradient(circle, #444, #000);"></iframe>
+                        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; font-size:11px;">
+                            <div style="width:120px; height:120px; background: radial-gradient(circle, var(--accent) 0%, transparent 70%); opacity:0.6;"></div>
+                            Z-Stat Heatmap
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; font-size:10px; font-family:var(--mono); color:var(--accent);">
+                        COORD: 42, -58, 12 | MNISPACE | VALUE: 4.82 (Z)
+                    </div>
+                </div>
+            `;
         }
 
-        // --- INIT ---
-        document.querySelectorAll('.tab').forEach(t => t.onclick = () => tab(t.dataset.tab));
+        function renderStandardResults() {
+            Plotly.newPlot('results-viz-container', [{ y: Array.from({ length: 100 }, () => Math.random()), fill: 'tozeroy', line: { color: '#14b8a6' } }], {
+                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', margin: { t: 0, r: 0, b: 30, l: 30 }
+            });
+        }
+
+        document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+            t.classList.add('active');
+            document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+        });
         document.querySelectorAll('[data-mod]').forEach(b => b.onclick = () => setModality(b.dataset.mod));
-        updateSampleList();
+        setModality('EEG');
     </script>
 </body>
 
