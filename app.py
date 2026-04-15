@@ -6,11 +6,13 @@ import uuid
 import random
 import hashlib
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, List
 
 def _sanitize(obj):
-    """Recursively convert numpy types to Python native types for JSON serialization."""
+    """Recursively convert numpy types to Python native types for JSON serialization.
+    Also replaces nan/inf with None to ensure JSON compliance."""
+    import math
     if isinstance(obj, dict):
         return {k: _sanitize(v) for k, v in obj.items()}
     elif isinstance(obj, (list, tuple)):
@@ -18,7 +20,10 @@ def _sanitize(obj):
     elif isinstance(obj, (np.integer,)):
         return int(obj)
     elif isinstance(obj, (np.floating,)):
-        return float(obj)
+        v = float(obj)
+        return None if (math.isnan(v) or math.isinf(v)) else v
+    elif isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, np.bool_):
@@ -33,18 +38,59 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request
-from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import iterate_in_threadpool
 from pydantic import BaseModel
 
 from cortexiq.database import init_db, SessionLocal, User, Study, AnalysisJob, ChatMessage
-from cortexiq.config import UPLOAD_DIR, RESULTS_DIR
+from cortexiq.config import UPLOAD_DIR, RESULTS_DIR, POSTHOG_API_KEY, POSTHOG_HOST
 from cortexiq.auth.jwt_handler import create_token, verify_token
 from cortexiq.ai.interpreter import CortexIQInterpreter
 from cortexiq.eeg.loader import EEGLoader
 from cortexiq.eeg.pipeline import EEGPipeline
 from cortexiq.eeg.reporter import EEGReporter
+
+# ── PostHog Server-Side Analytics ──
+try:
+    from posthog import Posthog
+    if POSTHOG_API_KEY:
+        posthog_client = Posthog(POSTHOG_API_KEY, host=POSTHOG_HOST)
+        logger.info("PostHog analytics initialized.")
+    else:
+        posthog_client = None
+        logger.info("PostHog API key not set — analytics disabled.")
+except ImportError:
+    posthog_client = None
+    logger.warning("posthog-python not installed — analytics disabled. Install with: pip install posthog")
+
+
+def _ph(event: str, user_id, properties: dict = None):
+    """Fire-and-forget PostHog event capture. Silently skips if PostHog is not configured."""
+    if not posthog_client:
+        return
+    try:
+        posthog_client.capture(
+            distinct_id=str(user_id),
+            event=event,
+            properties=properties or {}
+        )
+    except Exception as e:
+        logger.debug(f"PostHog tracking error: {e}")
+
+
+def _ph_identify(user_id, properties: dict = None):
+    """Identify a user in PostHog with their properties."""
+    if not posthog_client:
+        return
+    try:
+        posthog_client.identify(
+            distinct_id=str(user_id),
+            properties=properties or {}
+        )
+    except Exception as e:
+        logger.debug(f"PostHog identify error: {e}")
 
 # ── Init ──
 init_db()
@@ -115,6 +161,7 @@ class StudyCreateRequest(BaseModel):
     reference: str = "average"
     notes: str = ""
     montage: List[str] = []
+    events: Optional[dict] = None
 class ChatRequest(BaseModel):
     message: str
     model: str = "claude"
@@ -143,7 +190,7 @@ async def send_otp(req: SendOTPRequest):
         db.close(); raise HTTPException(status_code=400, detail="Email exists. Please login.")
     db.close()
     code = f"{random.randint(100000, 999999)}"
-    otp_store[email] = {"code": code, "expires": datetime.utcnow().timestamp() + 300}
+    otp_store[email] = {"code": code, "expires": datetime.now(timezone.utc).timestamp() + 300}
     
     # Send real email
     success = send_otp_email(email, code)
@@ -156,7 +203,7 @@ async def send_otp(req: SendOTPRequest):
 @app.post("/api/auth/verify-otp")
 async def verify_otp(req: VerifyOTPRequest):
     email, stored = req.email.strip().lower(), otp_store.get(req.email.strip().lower())
-    if not stored or datetime.utcnow().timestamp() > stored["expires"]: raise HTTPException(status_code=400, detail="OTP expired.")
+    if not stored or datetime.now(timezone.utc).timestamp() > stored["expires"]: raise HTTPException(status_code=400, detail="OTP expired.")
     if stored["code"] != req.code.strip(): raise HTTPException(status_code=400, detail="Invalid OTP.")
     return {"verified": True}
 
@@ -165,7 +212,7 @@ async def register(req: RegisterRequest):
     email, username = req.email.strip().lower(), req.username.strip()
     if len(username) < 3 or len(req.password) < 6: raise HTTPException(status_code=400, detail="Short username/password.")
     stored = otp_store.get(email)
-    if not stored or datetime.utcnow().timestamp() > stored["expires"]: raise HTTPException(status_code=400, detail="OTP expired.")
+    if not stored or datetime.now(timezone.utc).timestamp() > stored["expires"]: raise HTTPException(status_code=400, detail="OTP expired.")
     if stored["code"] != req.otp_code.strip(): raise HTTPException(status_code=400, detail="Invalid OTP.")
     db = SessionLocal()
     if db.query(User).filter((User.email == email) | (User.username == username)).first():
@@ -173,6 +220,8 @@ async def register(req: RegisterRequest):
     user = User(email=email, username=username, password_hash=hash_password(req.password), tier="Researcher", login_count=1)
     db.add(user); db.commit(); u_id = user.id; db.close()
     if email in otp_store: del otp_store[email]
+    _ph_identify(u_id, {"email": email, "username": username, "tier": "Researcher"})
+    _ph("user_registered", u_id, {"email": email, "username": username})
     return {"token": create_token(u_id, username, email, "Researcher"), "user_id": u_id, "username": username, "email": email}
 
 @app.post("/api/auth/login")
@@ -180,9 +229,12 @@ async def login(req: LoginRequest):
     db = SessionLocal()
     u = db.query(User).filter((User.username == req.username) | (User.email == req.username)).first()
     if not u or not check_password(req.password, u.password_hash):
+        _ph("login_failed", req.username, {"attempted_username": req.username})
         db.close(); raise HTTPException(status_code=401, detail="Invalid credentials.")
-    u.login_count += 1; u.last_login = datetime.utcnow(); db.commit()
+    u.login_count += 1; u.last_login = datetime.now(timezone.utc); db.commit()
     res = {"token": create_token(u.id, u.username, u.email, u.tier, req.remember_me), "user_id": u.id, "username": u.username, "email": u.email, "tier": u.tier, "login_count": u.login_count}
+    _ph_identify(u.id, {"email": u.email, "username": u.username, "tier": u.tier, "login_count": u.login_count})
+    _ph("user_logged_in", u.id, {"username": u.username, "login_count": u.login_count, "remember_me": req.remember_me})
     db.close(); return res
 
 @app.get("/api/auth/me")
@@ -196,6 +248,7 @@ async def get_me(user: dict = Depends(get_current_user)):
 async def update_profile(req: UpdateProfileRequest, user: dict = Depends(get_current_user)):
     db = SessionLocal(); u = db.query(User).filter(User.id == int(user["sub"])).first()
     if u: u.google_scholar, u.institution, u.bio = req.google_scholar, req.institution, req.bio; db.commit()
+    _ph("profile_updated", user["sub"], {"has_scholar": bool(req.google_scholar), "has_institution": bool(req.institution)})
     db.close(); return {"message": "Profile updated"}
 
 @app.get("/api/user/history")
@@ -229,13 +282,24 @@ async def upload_files(files: List[UploadFile] = File(...), sfreq: float = Form(
         n_show = info.n_channels
         n_samples = int(min(5.0, info.duration_sec) * info.sfreq)
         data = raw.get_data(stop=n_samples)
+        
+        # Demean each channel to remove DC offsets
+        for i in range(data.shape[0]):
+            ch_mean = np.mean(data[i])
+            data[i] -= ch_mean
+            
         times = np.linspace(0, n_samples/info.sfreq, n_samples).tolist()
         
-        # Calculate vertical spacing based on total amplitude
-        std_val = np.std(data) if np.std(data) > 0 else 1.0
+        # Calculate robust vertical spacing based on standard deviation
+        # Use median of per-channel std to avoid outliers (e.g. noisy channels)
+        stds = np.std(data, axis=1)
+        std_val = float(np.median(stds)) if len(stds) > 0 and np.median(stds) > 0 else 1e-6
+        if std_val < 1e-8: std_val = 1e-6 # fallback for extremely flat data
+        
         ch_pre = []
         for i in range(n_show):
-            offset = float(i * std_val * 6)
+            # i=0 at top for preview
+            offset = float((n_show - 1 - i) * std_val * 6)
             ch_pre.append({"name": info.channel_names[i], "data": [float(v) + offset for v in data[i].tolist()]})
             
         subj = {"id": len(session["subjects"]), "name": file.filename or f"upload_{f_id}", "path": save_path, "raw": raw, "info": info, "preview": {"times": times, "channels": ch_pre}}
@@ -243,17 +307,24 @@ async def upload_files(files: List[UploadFile] = File(...), sfreq: float = Form(
         new_subjects.append({"id": subj["id"], "name": subj["name"], "path": save_path, "info": {"format": info.format_name, "n_channels": info.n_channels, "sfreq": info.sfreq, "duration_sec": round(info.duration_sec, 1)}, "preview": subj["preview"]})
 
     if not new_subjects: raise HTTPException(status_code=400, detail="Supported files not found.")
+    _ph("file_uploaded", user["sub"], {"n_files": len(new_subjects), "sfreq": sfreq, "filenames": [s["name"] for s in new_subjects], "n_channels": new_subjects[0]["info"]["n_channels"] if new_subjects else 0})
     return {"subjects": new_subjects}
 
 @app.get("/api/study/session")
 async def get_study_session(user: dict = Depends(get_current_user)):
     uid = int(user["sub"]); session = get_user_session(uid)
-    # Return serializable summary of subjects
+    # Return serializable summary of subjects (include channel_names for frontend mapping list)
     subjs = []
     for s in session["subjects"]:
         subjs.append({
             "id": s["id"], "name": s["name"], 
-            "info": {"format": s["info"].format_name, "n_channels": s["info"].n_channels, "sfreq": s["info"].sfreq, "duration_sec": round(s["info"].duration_sec, 1)}, 
+            "info": {
+                "format": s["info"].format_name,
+                "n_channels": s["info"].n_channels,
+                "channel_names": list(s["info"].channel_names),
+                "sfreq": s["info"].sfreq,
+                "duration_sec": round(s["info"].duration_sec, 1)
+            }, 
             "preview": s["preview"]
         })
     return {"subjects": subjs, "study_ctx": session.get("study_ctx", {})}
@@ -286,9 +357,20 @@ async def get_subject_data(subject_id: int, tmin: float = 0.0, tmax: float = 30.
     start_sample = int(tmin * sfreq)
     stop_sample = int(tmax * sfreq)
     data = raw.get_data(start=start_sample, stop=stop_sample)
+    
+    # Demean each channel to remove DC offsets for visualization
+    for i in range(data.shape[0]):
+        ch_mean = np.mean(data[i])
+        data[i] -= ch_mean
+        
     times = np.linspace(tmin, tmax, data.shape[1]).tolist()
 
-    std_val = float(np.std(data)) if np.std(data) > 0 else 1.0
+    # Calculate robust vertical spacing
+    # Use median of per-channel std to avoid outliers (e.g. noisy channels)
+    stds = np.std(data, axis=1)
+    std_val = float(np.median(stds)) if len(stds) > 0 and np.median(stds) > 0 else 1e-6
+    if std_val < 1e-8: std_val = 1e-6 # fallback
+
     montage = session.get("study_ctx", {}).get("montage", [])
     channels = []
     n_ch = info.n_channels
@@ -296,7 +378,12 @@ async def get_subject_data(subject_id: int, tmin: float = 0.0, tmax: float = 30.
         # Ch0 (first column) gets the highest offset = top of plot
         offset = float((n_ch - 1 - i) * std_val * 6)
         electrode_name = montage[i] if i < len(montage) and montage[i] else info.channel_names[i]
-        channels.append({"name": electrode_name, "offset": offset, "raw_name": info.channel_names[i], "data": [float(v) + offset for v in data[i].tolist()]})
+        channels.append({
+            "name": electrode_name, 
+            "offset": offset, 
+            "raw_name": info.channel_names[i], 
+            "data": [float(v) + offset for v in data[i].tolist()]
+        })
 
     return {"times": times, "channels": channels, "tmin": tmin, "tmax": tmax, "total_duration": total_dur}
 
@@ -345,6 +432,35 @@ async def create_study(req: StudyCreateRequest, user: dict = Depends(get_current
             "format": info.format_name,
         })
 
+    # Compute effective channel names: prefer user's montage assignments over raw file names
+    raw_ch_names = subjects[0]["info"].channel_names
+    montage = req.montage or []
+    effective_channel_names = [
+        (montage[i] if i < len(montage) and montage[i] else raw_ch_names[i])
+        for i in range(len(raw_ch_names))
+    ]
+    # Build channel mapping list for the AI (raw→electrode) when montage differs
+    channel_mapping = []
+    for i, (raw, eff) in enumerate(zip(raw_ch_names, effective_channel_names)):
+        if raw != eff:
+            channel_mapping.append({"index": i + 1, "raw": raw, "label": eff})
+
+    # Strip binary/non-serialisable content from events (ArrayBuffer from frontend)
+    events_ctx = None
+    if req.events:
+        content = req.events.get("content")
+        if isinstance(content, str):
+            events_ctx = {
+                "name": req.events.get("name", ""),
+                "size": req.events.get("size", 0),
+                "content": content,
+            }
+        else:
+            events_ctx = {
+                "name": req.events.get("name", ""),
+                "size": req.events.get("size", 0),
+            }
+
     session["study_id"] = s_id
     session["study_ctx"] = {
         "study_id": s_id,
@@ -353,16 +469,20 @@ async def create_study(req: StudyCreateRequest, user: dict = Depends(get_current
         "n_subjects": len(subjects),
         "sfreq": req.sfreq,
         "n_channels": subjects[0]["info"].n_channels,
-        "channel_names": subjects[0]["info"].channel_names,
+        "raw_channel_names": raw_ch_names,
+        "channel_names": effective_channel_names,
+        "channel_mapping": channel_mapping,
         "duration_sec": round(subjects[0]["info"].duration_sec, 2),
         "file_format": subjects[0]["info"].format_name,
         "conditions": req.conditions,
         "reference": req.reference,
         "notes": req.notes,
         "montage": req.montage,
+        "events": events_ctx,
         "subjects": subjects_summary,
         "total_duration_sec": round(total_duration, 2),
     }
+    _ph("study_created", user["sub"], {"study_id": s_id, "study_name": req.name, "modality": req.modality, "n_channels": subjects[0]["info"].n_channels, "n_subjects": len(subjects), "sfreq": req.sfreq, "has_montage": bool(req.montage), "has_events": bool(req.events)})
     return {"study_id": s_id, "name": req.name}
 
 @app.post("/api/study/load/{study_id}")
@@ -388,10 +508,18 @@ async def load_study(study_id: int, user: dict = Depends(get_current_user)):
                         n_samples = int(min(5.0, info.duration_sec) * info.sfreq)
                         data = raw.get_data(stop=n_samples)
                         times = np.linspace(0, n_samples/info.sfreq, n_samples).tolist()
-                        std_val = np.std(data) if np.std(data) > 0 else 1.0
+
+                        # Demean and use robust per-channel std (same as upload)
+                        for j in range(data.shape[0]):
+                            data[j] -= np.mean(data[j])
+                        stds = np.std(data, axis=1)
+                        std_val = float(np.median(stds)) if len(stds) > 0 and np.median(stds) > 0 else 1e-6
+                        if std_val < 1e-8: std_val = 1e-6
+
+                        n_ch = info.n_channels
                         ch_pre = []
-                        for j in range(info.n_channels):
-                            offset = float(j * std_val * 6)
+                        for j in range(n_ch):
+                            offset = float((n_ch - 1 - j) * std_val * 6)
                             ch_pre.append({"name": info.channel_names[j], "data": [float(v) + offset for v in data[j].tolist()]})
                         
                         session["subjects"].append({
@@ -442,6 +570,40 @@ async def load_study(study_id: int, user: dict = Depends(get_current_user)):
     db.close()
     return {"message": "Study loaded", "study": session["study_ctx"]}
 
+@app.delete("/api/study/subject/{subject_id}/channel/{channel_idx}")
+async def delete_channel_endpoint(subject_id: int, channel_idx: int, user: dict = Depends(get_current_user)):
+    uid = int(user["sub"]); session = get_user_session(uid)
+    subjects = session.get("subjects", [])
+    subj = next((s for s in subjects if s["id"] == subject_id), None)
+    if not subj: raise HTTPException(status_code=404, detail="Subject not found")
+    
+    raw = subj.get("raw")
+    if raw is None: raise HTTPException(status_code=400, detail="Data not loaded")
+    
+    if channel_idx < 0 or channel_idx >= len(raw.ch_names):
+        raise HTTPException(status_code=400, detail="Invalid channel index")
+        
+    ch_name = raw.ch_names[channel_idx]
+    try:
+        raw.drop_channels([ch_name])
+        # Update cached info
+        subj["info"].n_channels = len(raw.ch_names)
+        subj["info"].channel_names = list(raw.ch_names)
+        # Update preview (optional but keeps things consistent)
+        subj["preview"]["channels"] = [c for c in subj["preview"]["channels"] if c["name"] != ch_name]
+        
+        # If this was the active study, update study_ctx too
+        if session.get("study_ctx") and session["study_ctx"].get("subjects"):
+            for s_meta in session["study_ctx"]["subjects"]:
+                if s_meta["name"] == subj["name"]:
+                    s_meta["n_channels"] = len(raw.ch_names)
+                    s_meta["channel_names"] = list(raw.ch_names)
+        
+        _ph("channel_deleted", user["sub"], {"channel_name": ch_name, "remaining": len(raw.ch_names)})
+        return {"message": f"Dropped channel {ch_name}", "n_channels": len(raw.ch_names)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.delete("/api/study/subject/{subject_id}")
 async def delete_subject(subject_id: int, user: dict = Depends(get_current_user)):
     uid = int(user["sub"]); session = get_user_session(uid)
@@ -480,30 +642,28 @@ async def delete_study(study_id: int, user: dict = Depends(get_current_user)):
             session.pop("study_id", None)
             session["chat_history"] = []
         return {"message": "Study deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
+        _ph("study_deleted", user["sub"], {"study_id": study_id})
         db.close()
 
-@app.post("/api/ai/chat")
-async def ai_chat(req: ChatRequest, user: dict = Depends(get_current_user)):
-    uid = int(user["sub"]); session = get_user_session(uid)
-
-    # Build enriched context with live data stats
+def _build_chat_ctx(session: dict) -> dict:
+    """Build an enriched context dict from the current session (data stats + pipeline results)."""
     ctx = dict(session.get("study_ctx", {}))
-
-    # Compute quick data characteristics from raw objects
     subjects = session.get("subjects", [])
-    montage = ctx.get("montage", [])
+    montage  = ctx.get("montage", [])
     if subjects:
         data_stats = []
         for s in subjects:
             raw = s.get("raw")
             if raw is not None:
                 try:
-                    # Cap to first 60s to avoid OOM on large recordings
                     cap_samples = min(int(raw.n_times), int(60 * raw.info["sfreq"]))
                     data = raw.get_data(stop=cap_samples)
                     info = s["info"]
-                    # Per-channel stats with electrode names
                     channel_stats = []
                     for ch_i in range(min(info.n_channels, data.shape[0])):
                         ch_data = data[ch_i]
@@ -511,19 +671,13 @@ async def ai_chat(req: ChatRequest, user: dict = Depends(get_current_user)):
                         channel_stats.append({
                             "electrode": electrode,
                             "raw_name": info.channel_names[ch_i],
-                            "amplitude_uV_range": [
-                                round(float(np.min(ch_data)) * 1e6, 2),
-                                round(float(np.max(ch_data)) * 1e6, 2),
-                            ],
+                            "amplitude_uV_range": [round(float(np.min(ch_data)) * 1e6, 2), round(float(np.max(ch_data)) * 1e6, 2)],
                             "amplitude_uV_std": round(float(np.std(ch_data)) * 1e6, 2),
                         })
                     data_stats.append({
                         "name": s["name"],
                         "n_samples": int(raw.n_times),
-                        "amplitude_uV_range": [
-                            round(float(np.min(data)) * 1e6, 2),
-                            round(float(np.max(data)) * 1e6, 2),
-                        ],
+                        "amplitude_uV_range": [round(float(np.min(data)) * 1e6, 2), round(float(np.max(data)) * 1e6, 2)],
                         "amplitude_uV_std": round(float(np.std(data)) * 1e6, 2),
                         "channel_stats": channel_stats,
                     })
@@ -531,8 +685,6 @@ async def ai_chat(req: ChatRequest, user: dict = Depends(get_current_user)):
                     pass
         if data_stats:
             ctx["data_stats"] = data_stats
-
-    # Include pipeline results if available
     pipeline = session.get("pipeline")
     if pipeline is not None:
         try:
@@ -545,49 +697,94 @@ async def ai_chat(req: ChatRequest, user: dict = Depends(get_current_user)):
                 }
         except Exception:
             pass
+    return ctx
 
-    response = ai_interpreter.interpret(req.message, ctx, session["chat_history"], model=req.model)
 
-    # DEBUG: Log response type and pipeline info
-    rtype = response.get("type", "unknown")
-    nsteps = len(response.get("pipeline_steps", []))
-    print(f"[AI DEBUG] type={rtype}, steps={nsteps}, has_message={bool(response.get('message'))}", flush=True)
-    if rtype != "pipeline":
-        print(f"[AI DEBUG] Non-pipeline response preview: {str(response)[:300]}", flush=True)
-
-    # Store in chat history - use message/understanding for the text content
+def _save_chat_turn(session: dict, uid: int, user_msg: str,
+                    response: dict, model: str) -> None:
+    """Append a user/assistant turn to session history and persist to DB."""
     assistant_content = response.get("message", response.get("understanding", ""))
-    session["chat_history"].append({"role": "user", "content": req.message})
+    session["chat_history"].append({"role": "user",      "content": user_msg})
     session["chat_history"].append({"role": "assistant", "content": assistant_content})
 
-    # Update pending pipeline steps if pipeline response and data exists
     if response.get("type") == "pipeline":
         steps = response.get("pipeline_steps", [])
         if steps and session.get("subjects"):
             session["pending_steps"] = steps
         elif steps and not session.get("subjects"):
-            # Pipeline generated but no data — warn user instead of storing unusable steps
-            response["message"] = (response.get("message", "") + " (Please upload EEG files first so I can run this pipeline.)").strip()
+            response["message"] = (response.get("message", "") +
+                                   " (Please upload EEG files first so I can run this pipeline.)").strip()
             session["pending_steps"] = []
 
-    # Persist to DB
     study_id = session.get("study_id")
     if study_id:
         db = SessionLocal()
         try:
-            db.add(ChatMessage(study_id=study_id, user_id=uid, role="user", content=req.message, model=req.model))
-            db.add(ChatMessage(study_id=study_id, user_id=uid, role="assistant", content=assistant_content, model=req.model))
+            db.add(ChatMessage(study_id=study_id, user_id=uid, role="user",      content=user_msg,          model=model))
+            db.add(ChatMessage(study_id=study_id, user_id=uid, role="assistant", content=assistant_content, model=model))
             db.commit()
         except Exception:
             db.rollback()
         finally:
             db.close()
 
-    # Include pending_steps in response so frontend always has them
+
+@app.post("/api/ai/chat")
+async def ai_chat(req: ChatRequest, user: dict = Depends(get_current_user)):
+    uid = int(user["sub"]); session = get_user_session(uid)
+    ctx = _build_chat_ctx(session)
+    response = ai_interpreter.interpret(req.message, ctx, session["chat_history"], model=req.model)
+    _save_chat_turn(session, uid, req.message, response, req.model)
     if response.get("type") == "pipeline" and session.get("pending_steps"):
         response["pipeline_steps"] = session["pending_steps"]
-
+    _ph("ai_chat_sent", user["sub"], {
+        "message_length": len(req.message),
+        "model": req.model,
+        "response_type": response.get("type", "unknown"),
+        "has_pipeline_steps": bool(response.get("pipeline_steps")),
+        "n_pipeline_steps": len(response.get("pipeline_steps", [])),
+    })
     return response
+
+
+@app.post("/api/ai/chat/stream")
+async def ai_chat_stream(req: ChatRequest, user: dict = Depends(get_current_user)):
+    """SSE streaming version of /api/ai/chat.
+    Events:
+      data: {"type":"chunk","text":"<partial text>"}
+      data: {"type":"done","response":{...full response dict...}}
+      data: {"type":"error","message":"<error>"}
+    """
+    uid = int(user["sub"]); session = get_user_session(uid)
+    ctx      = _build_chat_ctx(session)
+    history  = list(session.get("chat_history", []))  # snapshot for thread safety
+
+    def sync_generate():
+        final_response = None
+        try:
+            for event in ai_interpreter.interpret_stream(
+                req.message, ctx, history, model=req.model
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
+                if event.get("type") == "done":
+                    final_response = event.get("response", {})
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            return
+
+        # Persist turn after streaming completes
+        if final_response:
+            _save_chat_turn(session, uid, req.message, final_response, req.model)
+            if final_response.get("type") == "pipeline" and session.get("pending_steps"):
+                # Emit an extra event so the frontend gets the saved steps
+                final_response["pipeline_steps"] = session["pending_steps"]
+                yield f"data: {json.dumps({'type': 'pipeline_steps_updated', 'steps': session['pending_steps']})}\n\n"
+
+    return StreamingResponse(
+        iterate_in_threadpool(sync_generate()),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/api/ai/chat/history")
@@ -678,6 +875,7 @@ async def pipeline_run(user: dict = Depends(get_current_user)):
             print(f"[MONTAGE] Warning: Could not apply montage: {e}", flush=True)
 
     pipeline.run(steps, raw)
+    _ph("pipeline_started", user["sub"], {"n_steps": len(steps), "step_names": [s.get("name", "") for s in steps]})
     return {"status": "started", "n_steps": len(steps)}
 
 
@@ -697,18 +895,21 @@ async def pipeline_status(user: dict = Depends(get_current_user)):
 async def pipeline_pause(user: dict = Depends(get_current_user)):
     uid = int(user["sub"])
     get_user_pipeline(uid).pause()
+    _ph("pipeline_paused", user["sub"])
     return {"status": "paused"}
 
 @app.post("/api/pipeline/resume")
 async def pipeline_resume(user: dict = Depends(get_current_user)):
     uid = int(user["sub"])
     get_user_pipeline(uid).resume()
+    _ph("pipeline_resumed", user["sub"])
     return {"status": "running"}
 
 @app.post("/api/pipeline/stop")
 async def pipeline_stop(user: dict = Depends(get_current_user)):
     uid = int(user["sub"])
     get_user_pipeline(uid).stop()
+    _ph("pipeline_stopped", user["sub"])
     return {"status": "stopped"}
 
 @app.get("/api/study/download/{subject_id}")
@@ -730,6 +931,8 @@ async def download_subject(subject_id: int, user: dict = Depends(get_current_use
         ".csv": "text/csv",
         ".tsv": "text/tab-separated-values",
         ".npy": "application/octet-stream",
+        ".fdt": "application/octet-stream",
+        ".xdf": "application/octet-stream",
     }
     media_type = media_types.get(ext, "application/octet-stream")
     return FileResponse(path, filename=os.path.basename(path), media_type=media_type)
@@ -789,7 +992,7 @@ async def generate_results(user: dict = Depends(get_current_user)):
                 "summary": step_data.get("summary", ""),
             })
     
-    return _sanitize({
+    result = _sanitize({
         "interpretation": interp,
         "methods": methods,
         "band_powers": band_powers,
@@ -804,17 +1007,39 @@ async def generate_results(user: dict = Depends(get_current_user)):
         },
         "study_info": study_info,
     })
+    _ph("results_generated", user["sub"], {
+        "study_name": study_info.get("name", ""),
+        "n_channels": study_info.get("n_channels", 0),
+        "n_figures": len(figures),
+        "has_band_powers": bool(band_powers),
+        "has_erp": bool(erp_peak),
+        "n_steps": len(step_summaries),
+    })
+    return result
 
 
 def _build_local_interpretation(statistics: dict, study_info: dict) -> str:
-    """Build a fast local interpretation from computed statistics."""
+    """Build an APA 7 style interpretation from computed statistics."""
     parts = []
     g = statistics.get("descriptive", {}).get("global", {})
     if g:
-        parts.append(f"Analysis of {g.get('n_channels', '?')}-channel {study_info.get('modality', 'EEG')} "
-                     f"({g.get('duration_sec', '?')}s at {g.get('sampling_rate_Hz', '?')} Hz). "
-                     f"Global signal amplitude: {g.get('global_mean_uV', 0):.2f} ± {g.get('global_std_uV', 0):.2f} µV "
-                     f"(range: {g.get('global_min_uV', 0):.2f} to {g.get('global_max_uV', 0):.2f} µV).")
+        parts.append(
+            f"The present analysis examined a {g.get('n_channels', 'N/A')}-channel "
+            f"{study_info.get('modality', 'EEG')} recording "
+            f"(duration = {g.get('duration_sec', 'N/A')} s, sampling rate = {g.get('sampling_rate_Hz', 'N/A')} Hz). "
+            f"The global signal amplitude was M = {g.get('global_mean_uV', 0):.2f} µV "
+            f"(SD = {g.get('global_std_uV', 0):.2f} µV), "
+            f"ranging from {g.get('global_min_uV', 0):.2f} to {g.get('global_max_uV', 0):.2f} µV."
+        )
+
+    # Cross-channel correlation
+    corr = statistics.get("descriptive", {}).get("cross_channel_correlation", {})
+    if corr and corr.get("mean_r") is not None:
+        parts.append(
+            f"Cross-channel coherence was assessed via pairwise Pearson correlations, yielding a mean r = {corr['mean_r']:.4f} "
+            f"(range: {corr.get('min_r', 0):.4f} to {corr.get('max_r', 0):.4f}), "
+            f"suggesting {'moderate to high' if abs(corr['mean_r']) > 0.3 else 'low'} inter-channel linear dependence."
+        )
 
     bp = statistics.get("band_analysis", {})
     if bp and "total_power_V2_Hz" in bp:
@@ -824,32 +1049,55 @@ def _build_local_interpretation(statistics: dict, study_info: dict) -> str:
         )
         if bands_sorted:
             dominant = bands_sorted[0]
-            parts.append(f"Dominant frequency band: {dominant[0]} ({dominant[1]['relative_power_pct']:.1f}% of total power).")
-            band_strs = [f"{k}: {v['relative_power_pct']:.1f}%" for k, v in bands_sorted]
-            parts.append("Band distribution: " + ", ".join(band_strs) + ".")
+            parts.append(
+                f"Spectral analysis using Welch's method revealed that the {dominant[0]} band was dominant, "
+                f"accounting for {dominant[1]['relative_power_pct']:.1f}% of total spectral power. "
+                f"The relative power distribution across bands was as follows: "
+                + ", ".join([f"{k} = {v['relative_power_pct']:.1f}%" for k, v in bands_sorted])
+                + "."
+            )
 
     erp = statistics.get("erp_analysis", {})
     if erp and erp.get("peak_amplitude_uV"):
-        parts.append(f"ERP peak: {erp['peak_amplitude_uV']:.2f} µV at {erp['peak_latency_ms']:.1f} ms on {erp['peak_channel']}.")
+        parts.append(
+            f"Event-related potential analysis identified a peak amplitude of "
+            f"{erp['peak_amplitude_uV']:.2f} µV at a latency of {erp['peak_latency_ms']:.1f} ms, "
+            f"observed at electrode {erp['peak_channel']}."
+        )
 
     ep = statistics.get("epoch_analysis", {})
     if ep:
-        parts.append(f"Epochs: {ep.get('n_epochs', '?')} epochs of {ep.get('epoch_duration_sec', '?')}s each.")
+        parts.append(
+            f"The continuous data were segmented into {ep.get('n_epochs', 'N/A')} epochs "
+            f"of {ep.get('epoch_duration_sec', 'N/A')} s duration each, "
+            f"yielding a total analyzed epoch time of {ep.get('total_epoch_time_sec', 'N/A')} s."
+        )
 
-    return " ".join(parts) if parts else "No analysis results available. Run the pipeline first."
+    return " ".join(parts) if parts else "No analysis results available. Please execute the processing pipeline first."
 
 
 def _build_local_methods(pipeline_steps: list, study_info: dict) -> str:
-    """Build a fast local methods paragraph."""
+    """Build an APA 7 style methods paragraph."""
     if not pipeline_steps:
         return ""
     step_names = [s.get("name", "Unknown step") for s in pipeline_steps if isinstance(s, dict)]
-    return (f"EEG data were analyzed using CortexIQ (N={study_info.get('subject_count', 1)} subjects, "
-            f"{study_info.get('n_channels', '?')} channels, {study_info.get('sfreq', '?')} Hz sampling rate). "
-            f"The following processing pipeline was applied: {'; '.join(step_names)}.")
+    n_subj = study_info.get('subject_count', 1)
+    n_ch = study_info.get('n_channels', 'N/A')
+    sfreq = study_info.get('sfreq', 'N/A')
+    return (
+        f"Electroencephalographic (EEG) data were recorded from {n_ch} scalp electrodes "
+        f"at a sampling rate of {sfreq} Hz (N = {n_subj}). "
+        f"All signal processing was performed using NeuraGentLab's CortexIQ platform "
+        f"(built on MNE-Python; Gramfort et al., 2013). "
+        f"The following preprocessing and analysis pipeline was applied sequentially: "
+        f"{'; '.join(step_names)}. "
+        f"Spectral power was estimated using Welch's method. "
+        f"All statistical computations were performed on the preprocessed data."
+    )
 
 @app.get("/api/results/download/{filename}")
 async def download_result(filename: str, user: dict = Depends(get_current_user)):
+    _ph("result_downloaded", user["sub"], {"filename": filename, "file_type": os.path.splitext(filename)[1]})
     safe_name = os.path.basename(filename)
     path = os.path.join(RESULTS_DIR, safe_name)
     if not os.path.exists(path): raise HTTPException(status_code=404)
@@ -865,6 +1113,11 @@ async def download_result(filename: str, user: dict = Depends(get_current_user))
     }
     media_type = media_types.get(ext, "application/octet-stream")
     return FileResponse(path, filename=safe_name, media_type=media_type)
+
+@app.get("/api/analytics/config")
+async def analytics_config():
+    """Return PostHog configuration for frontend SDK. Public endpoint."""
+    return {"posthog_api_key": POSTHOG_API_KEY, "posthog_host": POSTHOG_HOST}
 
 @app.get("/demo", response_class=HTMLResponse)
 async def demo_page():

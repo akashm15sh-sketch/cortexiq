@@ -29,6 +29,11 @@ matplotlib==3.10.1
 # ── DB ──
 sqlalchemy==2.0.38
 
+# ── Analytics ──
+posthog==7.11.1
+
 # ── Utilities ──
 httpx==0.28.1
 rich==13.9.4
+posthog
+pyxdf

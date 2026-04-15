@@ -1,8 +1,14 @@
 import os
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Float, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
-from datetime import datetime
+from datetime import datetime, timezone
 from .config import DB_PATH
+
+
+def _utcnow():
+    """Return current UTC time as timezone-aware datetime."""
+    return datetime.now(timezone.utc)
+
 
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
@@ -21,8 +27,8 @@ class User(Base):
     google_scholar = Column(String, default="")
     institution = Column(String, default="")
     bio = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    last_login = Column(DateTime, default=_utcnow)
     login_count = Column(Integer, default=0)
 
 
@@ -38,11 +44,11 @@ class Study(Base):
     reference = Column(String, default="average")
     notes = Column(Text, default="")
     file_path = Column(String, nullable=True)
-    files_json = Column(Text, nullable=True) # JSON list of file info
+    files_json = Column(Text, nullable=True)  # JSON list of file info
     file_format = Column(String, nullable=True)
     n_channels = Column(Integer, nullable=True)
     duration_sec = Column(Float, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
 
 class AnalysisJob(Base):
@@ -53,7 +59,7 @@ class AnalysisJob(Base):
     status = Column(String, default="pending")
     pipeline_json = Column(Text, nullable=True)
     results_json = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
     completed_at = Column(DateTime, nullable=True)
 
 
@@ -65,7 +71,16 @@ class ChatMessage(Base):
     role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     model = Column(String, default="claude")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+
+
+class LicenceUsage(Base):
+    """Track usage counts for licence keys."""
+    __tablename__ = "licence_usage"
+    id = Column(Integer, primary_key=True)
+    licence_key = Column(String, unique=True, nullable=False)
+    used_logins = Column(Integer, default=0)
+    last_used = Column(DateTime, default=_utcnow)
 
 
 def init_db():

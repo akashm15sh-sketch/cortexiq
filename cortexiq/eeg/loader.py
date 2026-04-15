@@ -51,6 +51,8 @@ class EEGLoader:
                 raw = mne.io.read_raw_eeglab(filepath, preload=True, verbose=False)
             elif ext == ".vhdr":
                 raw = mne.io.read_raw_brainvision(filepath, preload=True, verbose=False)
+            elif ext == ".xdf":
+                raw = self._load_xdf(filepath)
             elif ext in (".csv", ".tsv"):
                 raw = self._load_tabular(filepath, ext, sfreq)
             elif ext == ".npy":
@@ -69,7 +71,57 @@ class EEGLoader:
             return raw, info
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return None, FileInfo(error=f"Load error: {str(e)}")
+
+    def _load_xdf(self, filepath: str) -> mne.io.RawArray:
+        """Load XDF file using pyxdf."""
+        import pyxdf
+        streams, header = pyxdf.load_xdf(filepath)
+        
+        # Find the EEG stream (highest sfreq usually, or labeled EEG)
+        eeg_stream = None
+        for s in streams:
+            if s['info']['type'][0].lower() == 'eeg':
+                eeg_stream = s
+                break
+        
+        # Fallback: largest numeric stream
+        if eeg_stream is None:
+            max_ch = -1
+            for s in streams:
+                if int(s['info']['channel_count'][0]) > max_ch:
+                    max_ch = int(s['info']['channel_count'][0])
+                    eeg_stream = s
+
+        if eeg_stream is None:
+            raise ValueError("No valid EEG streams found in XDF file.")
+
+        data = eeg_stream['time_series'].T  # (n_channels, n_times)
+        sfreq = float(eeg_stream['info']['nominal_srate'][0])
+        
+        # Get channel names if available
+        ch_names = []
+        try:
+            desc = eeg_stream['info']['desc'][0]
+            if desc and 'channels' in desc:
+                channels = desc['channels'][0]['channel']
+                for ch in channels:
+                    ch_names.append(ch['label'][0])
+        except Exception:
+            pass
+            
+        if len(ch_names) != data.shape[0]:
+            ch_names = [f"Ch{i+1}" for i in range(data.shape[0])]
+
+        # Scale if necessary (MNE expects Volts)
+        # Check unit (standard XDF units are microvolts usually)
+        if np.abs(data).max() > 1.0:
+            data = data * 1e-6
+
+        info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types="eeg")
+        return mne.io.RawArray(data, info, verbose=False)
 
     def _load_tabular(self, filepath: str, ext: str, sfreq: float = None) -> mne.io.RawArray:
         """Load CSV/TSV into MNE RawArray."""
@@ -82,24 +134,18 @@ class EEGLoader:
         if sfreq is None:
             sfreq = 256.0  # Default
 
-        # Detect if column names are numeric (CSV has no header — first data row used as header)
+        # Detect if column names are numeric (CSV has no header)
         all_numeric_headers = all(
             self._is_numeric_str(str(c)) for c in df.columns
         )
         if all_numeric_headers:
-            # Reload without header, prepend the "header" row back as data
             df_no_header = pd.read_csv(filepath, sep=sep, header=None)
-            # Check if first row looks like a time column
             first_col = str(df_no_header.iloc[0, 0]).lower().strip()
             if first_col in ("time", "timestamp", "sample", "index", ""):
-                df_no_header = df_no_header.iloc[1:]  # Skip time label row
-            else:
-                # The header row is actually data — keep it
-                pass
+                df_no_header = df_no_header.iloc[1:]
             df_no_header = df_no_header.apply(pd.to_numeric, errors="coerce")
             df_no_header = df_no_header.dropna(axis=1, how="all")
             n_cols = len(df_no_header.columns)
-            # Drop first column if it looks like time/index
             if n_cols > 1:
                 first_vals = df_no_header.iloc[:5, 0].values
                 is_time = all(
@@ -108,20 +154,17 @@ class EEGLoader:
                 )
                 if is_time and n_cols > 2:
                     df_no_header = df_no_header.iloc[:, 1:]
-                    n_cols -= 1
             df = df_no_header.reset_index(drop=True)
             df.columns = [f"Ch{i+1}" for i in range(len(df.columns))]
 
-        # Detect EEG columns
         eeg_cols = []
         other_cols = []
         for col in df.columns:
             if col.lower().strip() in EEG_CHANNEL_PATTERNS or col.lower().startswith("eeg"):
                 eeg_cols.append(col)
             elif col.lower() in ("time", "timestamp", "sample", "index"):
-                continue  # Skip time columns
+                continue
             else:
-                # Try as numeric channel
                 if df[col].dtype in [np.float64, np.float32, np.int64, np.int32, float, int]:
                     other_cols.append(col)
 
@@ -132,9 +175,7 @@ class EEGLoader:
         if not use_cols:
             raise ValueError("No numeric EEG channels found in the file.")
 
-        data = df[use_cols].values.T  # (n_channels, n_times)
-
-        # Scale to volts if data looks like microvolts
+        data = df[use_cols].values.T
         if np.abs(data).max() > 1.0:
             data = data * 1e-6
 
@@ -157,7 +198,7 @@ class EEGLoader:
         if data.ndim == 1:
             data = data.reshape(1, -1)
         if data.shape[0] > data.shape[1]:
-            data = data.T  # Ensure (n_channels, n_times)
+            data = data.T
 
         if sfreq is None:
             sfreq = 256.0

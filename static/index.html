@@ -51,6 +51,38 @@
             color: #fff;
         }
 
+        /* ── shadcn-inspired agent card overrides for light theme ── */
+        [data-theme='light'] .agent-card {
+            background: #ffffff;
+            border-color: #cbd5e1;
+        }
+
+        [data-theme='light'] .agent-card-header {
+            border-bottom-color: #cbd5e1;
+        }
+
+        [data-theme='light'] .agent-card-body {
+            background: #f8fafc;
+        }
+
+        [data-theme='light'] .agent-badge {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        [data-theme='light'] .agent-accordion-item {
+            border-color: #cbd5e1;
+        }
+
+        [data-theme='light'] .agent-accordion-trigger:hover {
+            background: #f1f5f9;
+        }
+
+        [data-theme='light'] .agent-accordion-content {
+            background: #f8fafc;
+            border-top-color: #cbd5e1;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -393,31 +425,260 @@
 
         .chat-box {
             overflow-y: auto;
-            padding: 12px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
-        .msg {
-            max-width: 80%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .msg.bot {
-            background: var(--border);
-            color: var(--text);
-            border-bottom-left-radius: 2px;
-        }
-
+        /* ── User bubble ── */
         .msg.user {
+            align-self: flex-end;
+            max-width: 78%;
             background: var(--accent);
             color: var(--bg);
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
+            padding: 9px 14px;
+            border-radius: 18px;
+            border-bottom-right-radius: 4px;
+            font-size: 13px;
+            line-height: 1.55;
+            font-weight: 500;
+        }
+
+        /* ── Agent card (bot) ── */
+        .agent-card {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            font-size: 13px;
+            overflow: hidden;
+        }
+
+        .agent-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--border);
+            gap: 8px;
+        }
+
+        .agent-card-header-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .agent-bot-icon {
+            width: 16px;
+            height: 16px;
+            color: var(--dim);
+            flex-shrink: 0;
+        }
+
+        .agent-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .agent-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 7px;
+            border-radius: 99px;
+            font-size: 10px;
+            font-family: var(--mono);
+            font-weight: 500;
+            background: var(--border);
+            color: var(--dim);
+            letter-spacing: 0.01em;
+        }
+
+        .agent-card-body {
+            padding: 12px 14px;
+            color: var(--text);
+            line-height: 1.6;
+            background: var(--input);
+        }
+
+        /* pipeline steps inside agent card */
+        .agent-steps-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .agent-accordion {
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            overflow: hidden;
+        }
+
+        .agent-accordion-item {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .agent-accordion-item:last-child {
+            border-bottom: none;
+        }
+
+        .agent-accordion-trigger {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 12px;
+            font-family: var(--font);
+            text-align: left;
+            transition: background 0.15s;
+            gap: 8px;
+        }
+
+        .agent-accordion-trigger:hover {
+            background: var(--border);
+        }
+
+        .agent-accordion-trigger-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .agent-step-num {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--bg);
+            font-size: 9px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .agent-accordion-chevron {
+            width: 12px;
+            height: 12px;
+            color: var(--dim);
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .agent-accordion-item.open .agent-accordion-chevron {
+            transform: rotate(180deg);
+        }
+
+        .agent-accordion-content {
+            display: none;
+            padding: 0;
+            background: var(--input);
+            border-top: 1px solid var(--border);
+        }
+
+        .agent-accordion-item.open .agent-accordion-content {
+            display: block;
+        }
+
+        /* Rich step explanation sections */
+        .step-section {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            line-height: 1.65;
+        }
+
+        .step-section:last-child {
+            border-bottom: none;
+        }
+
+        .step-section-label {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .step-section-body {
+            color: var(--text);
+        }
+
+        .step-code-block-inline {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: #94a3b8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin-top: 4px;
+        }
+
+        .step-tag {
+            display: inline-block;
+            font-size: 9px;
+            background: var(--border);
+            color: var(--dim);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-family: var(--mono);
+        }
+
+        /* Streaming live bubble */
+        .streaming-indicator {
+            font-size: 10px;
+            color: var(--accent);
+            font-style: italic;
+            margin-left: 4px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            color: var(--accent);
+            animation: blink 0.7s step-end infinite;
+            font-weight: 300;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
         }
 
         .step {
@@ -572,7 +833,7 @@
         .montage-container {
             position: relative;
             width: 100%;
-            max-width: 420px;
+            max-width: 100%;
             margin: 0 auto;
         }
 
@@ -580,6 +841,7 @@
             width: 100%;
             height: auto;
             cursor: crosshair;
+            display: block;
         }
 
         .montage-svg .head-outline {
@@ -605,24 +867,22 @@
             stroke: var(--border);
             stroke-width: 0.8;
             cursor: pointer;
-            transition: fill 0.15s, stroke 0.15s, r 0.15s;
+            transition: fill 0.15s, stroke 0.15s;
         }
 
         .electrode:hover {
             stroke: var(--accent);
-            stroke-width: 1.2;
-            filter: drop-shadow(0 0 3px var(--accent));
+            filter: drop-shadow(0 0 2px var(--accent));
         }
 
         .electrode.selected {
             fill: var(--accent);
             stroke: #0d9488;
-            stroke-width: 1;
+            stroke-width: 0.6;
         }
 
         .electrode-label {
             fill: var(--dim);
-            font-size: 3.2px;
             text-anchor: middle;
             dominant-baseline: central;
             pointer-events: none;
@@ -630,15 +890,39 @@
             font-weight: 600;
         }
 
+        /* Dense montages: faint micro-labels — visible but non-distracting */
+        .electrode-label.micro {
+            fill: var(--border);
+            font-weight: 400;
+        }
+
         .electrode.selected+.electrode-label {
-            fill: var(--text);
+            fill: white;
+        }
+
+        /* floating electrode tooltip */
+        #montage-tooltip {
+            position: fixed;
+            background: var(--card);
+            border: 1px solid var(--accent);
+            color: var(--text);
+            font-size: 11px;
+            font-family: var(--font);
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
         .montage-toolbar {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 6px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
         }
 
@@ -654,7 +938,7 @@
 
         .montage-legend {
             display: flex;
-            gap: 12px;
+            gap: 14px;
             margin-top: 8px;
             font-size: 10px;
             color: var(--dim);
@@ -683,16 +967,56 @@
             border: 1px solid var(--border);
         }
 
-        /* ── Mapping & Presets ── */
+        /* ── Montage preset select — styled ── */
         .montage-select {
+            appearance: none;
+            -webkit-appearance: none;
             background: var(--input);
             border: 1px solid var(--border);
-            border-radius: 4px;
+            border-radius: 6px;
             color: var(--text);
-            font-size: 10px;
-            padding: 2px 4px;
+            font-size: 11px;
+            padding: 5px 26px 5px 10px;
             cursor: pointer;
-            margin-right: 8px;
+            flex: 1;
+            min-width: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            transition: border-color 0.15s;
+        }
+
+        .montage-select:hover,
+        .montage-select:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .montage-select optgroup {
+            font-weight: 700;
+            color: var(--dim);
+        }
+
+        /* montage file import button */
+        .montage-import-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 10px;
+            background: var(--input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--dim);
+            font-size: 11px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: border-color 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .montage-import-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .mapping-list {
@@ -733,13 +1057,378 @@
             outline: none;
         }
 
+        .mapping-del-btn {
+            background: none;
+            border: none;
+            color: var(--dim);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s;
+            line-height: 1;
+        }
+
+        .mapping-del-btn:hover {
+            color: var(--red);
+        }
 
         .step-wrapper {
             margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
         .step-wrapper .step {
             margin-bottom: 0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           LAYOUT & ALIGNMENT FIXES
+        ═══════════════════════════════════════════════════════════════════ */
+
+        /* Defensive — JS also sets this but CSS should be complete */
+        #app-container {
+            display: flex;
+        }
+
+        /* Tab-bar never shrinks */
+        .tabs {
+            flex-shrink: 0;
+        }
+
+        /* Scrollable tabs get breathing room at the top */
+        #t-study,
+        #t-results,
+        #t-settings {
+            padding-top: 8px;
+        }
+
+        /* ── btn-sm — defined once, used everywhere ── */
+        .btn-sm {
+            padding: 5px 14px;
+            font-size: 11px;
+        }
+
+        /* ── Grid cells never overflow their column ── */
+        .grid>* {
+            min-width: 0;
+            min-height: 0;
+        }
+
+        /* ── Study tab — right sticky column ────────────────────────────── */
+        /* Removed position:sticky from inline style; handled here */
+        #study-right-col {
+            position: sticky;
+            top: 0;
+            align-self: start;
+            /* don't stretch to match left col height */
+            max-height: calc(100vh - 108px);
+            /* topbar 50px + tabs ~47px + buffer */
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        #study-right-col::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #study-right-col::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #study-right-col::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        /* Remove orphan bottom margin on last panel inside sidebar */
+        #study-right-col .panel:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ── Analysis panels — strip .panel padding, section-level padding instead */
+        #ana-chat-panel,
+        #ana-pipe-panel {
+            padding: 0 !important;
+        }
+
+        /* Panel headers inside analysis get their own padding + separator */
+        #ana-chat-panel>.panel-h,
+        #ana-pipe-panel>.panel-h {
+            padding: 11px 14px;
+            margin-bottom: 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Chat message list — tighter, scrollable */
+        #chat {
+            padding: 12px 14px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        #chat::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #chat::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        /* Thinking dots — compact */
+        #thinking {
+            padding: 6px 14px 8px;
+            flex-shrink: 0;
+        }
+
+        /* ── Chat input row ── */
+        .chat-input-row {
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        #chat-model {
+            flex-shrink: 0;
+            max-width: 130px;
+            min-width: 0;
+            font-size: 10px;
+            padding: 6px 8px;
+            background: var(--input);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Input must shrink when panel is narrow */
+        #chat-in {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ── Pipeline panel ── */
+        #pipe-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        #pipe-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #pipe-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        #pipe-log {
+            flex-shrink: 0;
+            max-height: 80px;
+            overflow-y: auto;
+            padding: 8px 12px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--dim);
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        #pipe-log:empty {
+            display: none;
+        }
+
+        /* ── Analysis header wraps on tight widths ── */
+        #ana-header {
+            flex-wrap: wrap;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* ── Agent card body — prevent overflow ── */
+        .agent-card-body {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            min-width: 0;
+        }
+
+        /* ── Step code blocks — horizontal scroll, no body overflow ── */
+        .step-code-block-inline,
+        .step-code-block {
+            overflow-x: auto;
+            white-space: pre;
+            word-break: normal;
+        }
+
+        /* ── Accordion content — word-wrap for long text ── */
+        .step-section-body,
+        .agent-accordion-content {
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* ── Results tab — table base styles ── */
+        .res-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            min-width: 400px;
+            /* let tables scroll horizontally if needed */
+        }
+
+        .res-table th {
+            background: var(--input);
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        .res-table td {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .res-table tr.rt-even td {
+            background: var(--card);
+        }
+
+        .res-table tr.rt-odd td {
+            background: var(--input);
+        }
+
+        .res-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .res-table tr:hover td {
+            background: var(--accent-glow) !important;
+        }
+
+        [data-theme='light'] .res-table th {
+            background: #f1f5f9;
+        }
+
+        /* Overflow wrapper for all result data tables */
+        .res-table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        /* ── Subject list items ── */
+        #sub-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        /* ── Saved study list items — text shouldn't overflow ── */
+        .saved-study-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            min-width: 0;
+        }
+
+        .saved-study-item:last-child {
+            border-bottom: none;
+        }
+
+        .saved-study-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .saved-study-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        /* ── Mapping list scrollbar ── */
+        .mapping-list {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .mapping-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .mapping-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        /* ── Modality steps view ── */
+        #modality-steps-view {
+            scrollbar-width: thin;
+        }
+
+        /* ── Ana-header stats don't truncate ── */
+        #ana-header>div:last-child {
+            flex-shrink: 0;
+        }
+
+        /* ── Pipeline progress container ── */
+        #pipe-progress-container {
+            flex-shrink: 0;
+        }
+
+        /* ── Responsive: single-column on narrow viewports ── */
+        @media (max-width: 840px) {
+
+            .grid,
+            #t-settings .grid {
+                grid-template-columns: 1fr;
+            }
+
+            #study-right-col {
+                position: static;
+                max-height: none;
+                overflow: visible;
+            }
+
+            #ana-pipe-panel {
+                width: 320px !important;
+                min-width: 240px !important;
+            }
         }
     </style>
 </head>
@@ -819,7 +1508,7 @@
         </div>
         <div id="t-study" class="tab-content active" style="overflow-y:auto;">
             <div class="grid" style="height:auto;">
-                <div class="panel" style="margin-bottom:16px;">
+                <div class="panel">
                     <div class="panel-h" id="study-panel-header">Study Management</div>
                     <div style="display:flex;gap:12px;margin-bottom:20px;">
                         <button class="btn btn-outline active" id="btn-choice-new" onclick="setStudyMode('new')">Create
@@ -855,9 +1544,12 @@
                         <div id="upload-container" style="margin-bottom:20px;">
                             <div class="upload-box" onclick="$('s-file').click()">
                                 <div style="font-size:14px;font-weight:600;color:var(--dim);">+</div>
-                                <div id="up-txt" style="font-size:12px;color:var(--dim);margin-top:8px;">Select Files
-                                    (Support Multiple)</div>
-                                <input type="file" id="s-file" class="hidden" multiple onchange="onUpload(this)">
+                                <div id="up-txt" style="font-size:12px;color:var(--dim);margin-top:8px;">Select EEG
+                                    Files
+                                    (Supports EDF, BDF, FIFA, SET, VHDR, XDF, CSV, etc.)</div>
+                                <input type="file" id="s-file" class="hidden" multiple
+                                    accept=".edf,.bdf,.fif,.set,.fdt,.vhdr,.xdf,.csv,.tsv,.npy"
+                                    onchange="onUpload(this)">
                             </div>
                         </div>
                     </div>
@@ -906,6 +1598,42 @@
                                 style="height:60px;margin-bottom:12px;"></textarea>
                             <textarea class="input" id="s-notes" placeholder="Additional Research Notes"
                                 style="height:60px;margin-bottom:12px;"></textarea>
+
+                            <!-- Events / Stimulus File -->
+                            <div style="margin-bottom:14px;">
+                                <label class="label">Events / Stimulus File <span
+                                        style="color:var(--dim);font-weight:400;">(optional)</span></label>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div id="events-file-display"
+                                        style="flex:1;background:var(--input);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:11px;color:var(--dim);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        No file selected
+                                    </div>
+                                    <button class="btn btn-outline btn-sm"
+                                        style="white-space:nowrap;font-size:11px;padding:7px 12px;display:flex;align-items:center;gap:5px;"
+                                        onclick="$('events-file-input').click()">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                            <polyline points="17 8 12 3 7 8" />
+                                            <line x1="12" y1="3" x2="12" y2="15" />
+                                        </svg>
+                                        Add Events
+                                    </button>
+                                    <button id="events-file-clear" class="btn btn-outline btn-sm hidden"
+                                        style="font-size:11px;padding:7px 10px;color:var(--red);border-color:var(--red);"
+                                        onclick="clearEventsFile()">✕</button>
+                                </div>
+                                <input type="file" id="events-file-input" class="hidden"
+                                    accept=".csv,.tsv,.txt,.eve,.fif,.mat,.edf,.vmrk,.markers,.mrk,.stim,.set,.fdt,.xdf"
+                                    onchange="onEventsFileSelected(this)">
+                                <div id="events-file-info"
+                                    style="margin-top:5px;font-size:10px;color:var(--dim);display:none;">
+                                    Accepted: .csv, .tsv, .txt, .eve, .fif, .mat, .edf, .vmrk, .markers, .mrk, .stim,
+                                    .set, .fdt, .xdf —
+                                    or any custom format
+                                </div>
+                            </div>
+
                             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                                 <button class="btn btn-outline" id="btn-save" onclick="createStudy(false)">Save
                                     Context</button>
@@ -916,7 +1644,7 @@
                     </div>
                     <div id="up-status" style="margin-top:12px;"></div>
                 </div>
-                <div style="position:sticky;top:80px;">
+                <div id="study-right-col">
                     <div class="panel">
                         <div class="panel-h" style="display:flex;justify-content:space-between;align-items:center;">
                             Data Overview
@@ -943,41 +1671,75 @@
                     <div class="panel" id="montage-panel">
                         <div class="panel-h" style="display:flex; justify-content:space-between; align-items:center;">
                             Channel Montage
-                            <span id="montage-count" class="montage-badge">0 / 256 Selected</span>
+                            <span id="montage-count" class="montage-badge">0 / 256 Mapped</span>
                         </div>
                         <div class="montage-toolbar">
                             <select id="montage-preset" class="montage-select" onchange="applyPreset()">
-                                <option value="256">256-Channel HD</option>
-                                <option value="128">128-Channel HD</option>
-                                <option value="64">Standard 10-10 (64ch)</option>
-                                <option value="21">Standard 10-20 (21ch)</option>
+                                <optgroup label="High-Density">
+                                    <option value="256">HD-256 — 256 channels</option>
+                                    <option value="128">HD-128 — 128 channels</option>
+                                </optgroup>
+                                <optgroup label="Standard Systems">
+                                    <option value="64">10-10 System — 64 channels</option>
+                                    <option value="21">10-20 System — 21 channels</option>
+                                </optgroup>
                             </select>
-                            <button class="btn btn-outline btn-sm" style="font-size:9px; padding:2px 6px;"
+                            <button class="montage-import-btn" onclick="$('montage-file-input').click()"
+                                title="Import custom montage file (.sfp, .elp, .xyz, .csv, .tsv, .loc)">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Import
+                            </button>
+                            <input type="file" id="montage-file-input" class="hidden"
+                                accept=".sfp,.elp,.xyz,.csv,.tsv,.loc,.locs,.txt,.ced,.bvef,.fif"
+                                onchange="importMontageFile(this)">
+                        </div>
+                        <div style="display:flex;gap:6px;margin-bottom:10px;">
+                            <button class="btn btn-outline btn-sm" style="font-size:10px;flex:1;"
                                 onclick="selectAllElectrodes()">Select All</button>
-                            <button class="btn btn-outline btn-sm" style="font-size:9px; padding:2px 6px;"
+                            <button class="btn btn-outline btn-sm" style="font-size:10px;flex:1;color:var(--dim);"
                                 onclick="clearMontage()">Clear All</button>
                         </div>
                         <div class="montage-container">
-                            <svg id="montage-svg" viewBox="0 0 100 100" class="montage-svg">
-                                <!-- Head Outline -->
+                            <svg id="montage-svg" viewBox="-2 -4 104 108" class="montage-svg">
+                                <!-- Head circle -->
                                 <circle cx="50" cy="50" r="45" class="head-outline" />
+                                <!-- Nose (top = anterior) -->
                                 <path d="M 45 5.5 L 50 1 L 55 5.5" class="nose-line" />
+                                <!-- Ears -->
                                 <path d="M 5 50 Q 0 50 5 40" class="ear-line" />
                                 <path d="M 95 50 Q 100 50 95 40" class="ear-line" />
+                                <!-- Orientation labels -->
+                                <text x="50" y="-1" text-anchor="middle" font-size="3.5" fill="var(--dim)"
+                                    font-family="var(--font)">Nose</text>
+                                <text x="50" y="101.5" text-anchor="middle" font-size="3.5" fill="var(--dim)"
+                                    font-family="var(--font)">Inion</text>
+                                <text x="-1" y="52" text-anchor="end" font-size="3.5" fill="var(--dim)"
+                                    font-family="var(--font)">L</text>
+                                <text x="101" y="52" text-anchor="start" font-size="3.5" fill="var(--dim)"
+                                    font-family="var(--font)">R</text>
                                 <g id="electrode-group"></g>
                             </svg>
                         </div>
                         <div class="montage-legend">
                             <span><i class="legend-dot unsel"></i> Available</span>
-                            <span><i class="legend-dot sel"></i> Selected</span>
+                            <span><i class="legend-dot sel"></i> Mapped</span>
+                            <span style="margin-left:auto;font-size:9px;color:var(--dim);">Click to toggle &nbsp;·&nbsp;
+                                Hover for name</span>
                         </div>
                     </div>
+                    <!-- Tooltip for electrode hover -->
+                    <div id="montage-tooltip"></div>
                 </div>
             </div>
         </div>
         <div id="t-analysis" class="tab-content">
             <div id="ana-header" class="panel hidden"
-                style="flex-shrink:0;display:flex; justify-content:space-between; align-items:center; padding:12px 20px; background:linear-gradient(90deg, #1e293b, #0f172a); border:1px solid var(--accent); margin-bottom:12px;">
+                style="flex-shrink:0;flex-wrap:wrap;display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:linear-gradient(90deg, #1e293b, #0f172a);border:1px solid var(--accent);margin-bottom:12px;">
                 <div style="display:flex; align-items:center; gap:16px;">
                     <div style="font-size:18px; font-weight:700; color:var(--accent);" id="ana-study-name">—</div>
                     <div style="font-size:11px; padding:2px 8px; border-radius:12px; background:rgba(0,242,254,0.1); color:var(--accent); border:1px solid var(--accent);"
@@ -991,12 +1753,9 @@
             </div>
             <div id="ana-resizable" style="display:flex;gap:0;flex:1;min-height:0;">
                 <div id="ana-chat-panel" class="panel"
-                    style="display:flex;flex-direction:column;flex:1;min-width:280px;overflow:hidden;margin:0;">
+                    style="display:flex;flex-direction:column;flex:1;min-width:280px;overflow:hidden;margin:0;padding:0;">
                     <div class="panel-h" style="flex-shrink:0;">AI Assistant</div>
                     <div class="chat-box" id="chat" style="flex:1;min-height:0;overflow-y:auto;">
-                        <div class="msg bot">Ready for analysis. Upload multiple files, and I'll help you process them
-                            all.
-                        </div>
                     </div>
                     <div id="thinking" class="hidden" style="padding:0 16px 8px 16px;flex-shrink:0;">
                         <div class="typing">
@@ -1005,16 +1764,15 @@
                             <div class="dot"></div>
                         </div>
                     </div>
-                    <div
-                        style="display:flex;gap:8px;padding:16px;border-top:1px solid var(--border);flex-shrink:0;align-items:center;">
-                        <select id="chat-model"
-                            style="background:var(--input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;flex-shrink:0;">
-                            <option value="claude">Claude (Anthropic)</option>
+                    <div class="chat-input-row">
+                        <select id="chat-model">
+                            <option value="claude">Claude Sonnet 4.6</option>
                             <option value="kilo-claude" disabled>&#x1f6a7; Claude (Kilo) — Under Construction</option>
                             <option value="kilo-gpt4o" disabled>&#x1f6a7; GPT-4o (Kilo) — Under Construction</option>
                             <option value="kilo-gemini" disabled>&#x1f6a7; Gemini (Kilo) — Under Construction</option>
                         </select>
-                        <input class="input" id="chat-in" placeholder="Ask AI to process data..."
+                        <input class="input" id="chat-in"
+                            placeholder="Ask anything — concepts, analysis, what does ICA do, why filter first..."
                             onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;">
                         <button class="btn btn-primary" id="btn-send" onclick="sendChat()">Send</button>
                         <button class="btn btn-outline hidden" id="btn-stop" onclick="stopChat()"
@@ -1027,7 +1785,7 @@
                     onmouseleave="this.style.background='var(--border)'" ondragstart="return false;">
                 </div>
                 <div id="ana-pipe-panel" class="panel hidden"
-                    style="display:flex;flex-direction:column;width:420px;min-width:280px;overflow:hidden;margin:0;">
+                    style="display:flex;flex-direction:column;width:420px;min-width:280px;overflow:hidden;margin:0;padding:0;">
                     <div class="panel-h"
                         style="display:flex; justify-content:space-between; align-items:center;flex-shrink:0;">
                         Pipeline
@@ -1040,11 +1798,8 @@
                                 style="padding:2px 8px; font-size:10px; color:var(--red);">Stop</button>
                         </div>
                     </div>
-                    <div id="pipe-list" style="display:flex;flex-direction:column;gap:8px;flex:1;overflow-y:auto;">
-                    </div>
-                    <div id="pipe-log"
-                        style="margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--dim);max-height:100px;overflow-y:auto;background:var(--input);padding:8px;border-radius:4px;">
-                    </div>
+                    <div id="pipe-list"></div>
+                    <div id="pipe-log"></div>
                 </div>
             </div>
         </div>
@@ -1062,8 +1817,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             1. Global Descriptive Statistics</div>
-                        <div id="res-global-desc-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-global-desc-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- 2. Per-Channel Descriptive Statistics -->
@@ -1071,8 +1825,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             2. Per-Channel Descriptive Statistics</div>
-                        <div id="res-ch-desc-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-ch-desc-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- 3. Band Power Analysis -->
@@ -1080,8 +1833,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             3. Band Power Analysis</div>
-                        <div id="res-band-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-band-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- 4. Per-Channel Band Powers -->
@@ -1089,8 +1841,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             4. Per-Channel Band Powers (V²/Hz)</div>
-                        <div id="res-ch-band-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-ch-band-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- 5. Cross-Channel Correlation -->
@@ -1098,8 +1849,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             5. Cross-Channel Correlation (Pearson r)</div>
-                        <div id="res-corr-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-corr-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- 6. ERP Analysis -->
@@ -1107,8 +1857,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             6. ERP Analysis</div>
-                        <div id="res-erp-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-erp-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- 7. Epoch Analysis -->
@@ -1116,8 +1865,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             7. Epoch Analysis</div>
-                        <div id="res-epoch-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-epoch-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- 8. Pipeline Steps -->
@@ -1125,8 +1873,7 @@
                         <div
                             style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
                             8. Pipeline Steps</div>
-                        <div id="res-steps-body"
-                            style="overflow-x:auto;border:1px solid var(--border);border-radius:8px;"></div>
+                        <div id="res-steps-body" class="res-table-wrap"></div>
                     </div>
 
                     <!-- Figures Gallery -->
@@ -1215,6 +1962,109 @@
             </div>
         </div>
     </div>
+    <!-- PostHog Analytics SDK -->
+    <script>
+        !function (t, e) { var o, n, p, r; e.__SV || (window.posthog = e, e._i = [], e.init = function (i, s, a) { function g(t, e) { var o = e.split("."); 2 == o.length && (t = t[o[0]], e = o[1]), t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } } (p = t.createElement("script")).type = "text/javascript", p.crossOrigin = "anonymous", p.async = !0, p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js", (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r); var u = e; for (void 0 !== a ? u = e[a] = [] : a = "posthog", u.people = u.people || [], u.toString = function (t) { var e = "posthog"; return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e }, u.people.toString = function () { return u.toString(1) + ".people (stub)" }, o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "), n = 0; n < o.length; n++)g(u, o[n]); e._i.push([i, s, a]) }, e.__SV = 1) }(document, window.posthog || []);
+
+        // Initialize PostHog from backend config
+        (async function initPostHog() {
+            try {
+                const resp = await fetch('/api/analytics/config');
+                const cfg = await resp.json();
+                if (cfg.posthog_api_key) {
+                    posthog.init(cfg.posthog_api_key, {
+                        api_host: cfg.posthog_host || 'https://us.i.posthog.com',
+                        autocapture: true,
+                        capture_pageview: true,
+                        capture_pageleave: true,
+                        capture_performance: true,
+                        session_recording: {
+                            recordCrossOriginIframes: false,
+                        },
+                        persistence: 'localStorage+cookie',
+                        loaded: function (ph) {
+                            console.log('[PostHog] Analytics initialized.');
+                        }
+                    });
+
+                    // ── Activity / Time-on-Page Tracking ──
+                    let _phSessionStart = Date.now();
+                    let _phActiveStart = Date.now();
+                    let _phTotalActiveMs = 0;
+                    let _phIsActive = true;
+                    let _phHeartbeatCount = 0;
+
+                    // Detect idle (no mouse/keyboard for 60s)
+                    let _phIdleTimer = null;
+                    function _phResetIdle() {
+                        if (!_phIsActive) {
+                            _phIsActive = true;
+                            _phActiveStart = Date.now();
+                        }
+                        clearTimeout(_phIdleTimer);
+                        _phIdleTimer = setTimeout(() => {
+                            if (_phIsActive) {
+                                _phTotalActiveMs += Date.now() - _phActiveStart;
+                                _phIsActive = false;
+                            }
+                        }, 60000);
+                    }
+                    document.addEventListener('mousemove', _phResetIdle, { passive: true });
+                    document.addEventListener('keydown', _phResetIdle, { passive: true });
+                    document.addEventListener('click', _phResetIdle, { passive: true });
+                    document.addEventListener('scroll', _phResetIdle, { passive: true });
+                    _phResetIdle();
+
+                    // Heartbeat every 30s with session duration
+                    setInterval(() => {
+                        _phHeartbeatCount++;
+                        let activeMs = _phTotalActiveMs + (_phIsActive ? Date.now() - _phActiveStart : 0);
+                        posthog.capture('$heartbeat', {
+                            session_duration_sec: Math.round((Date.now() - _phSessionStart) / 1000),
+                            active_duration_sec: Math.round(activeMs / 1000),
+                            heartbeat_count: _phHeartbeatCount,
+                        });
+                    }, 30000);
+
+                    // Track page leave with session duration
+                    window.addEventListener('beforeunload', () => {
+                        let activeMs = _phTotalActiveMs + (_phIsActive ? Date.now() - _phActiveStart : 0);
+                        posthog.capture('session_ended', {
+                            total_session_sec: Math.round((Date.now() - _phSessionStart) / 1000),
+                            active_sec: Math.round(activeMs / 1000),
+                            heartbeats: _phHeartbeatCount,
+                        });
+                    });
+
+                    // Store reference for use in app code
+                    window._phReady = true;
+                } else {
+                    console.log('[PostHog] No API key configured — analytics disabled.');
+                    window._phReady = false;
+                }
+            } catch (e) {
+                console.log('[PostHog] Config fetch failed — analytics disabled.');
+                window._phReady = false;
+            }
+        })();
+
+        // Helper: safe PostHog capture (no-op if not initialized)
+        function phTrack(event, props) {
+            if (window._phReady && window.posthog) {
+                posthog.capture(event, props || {});
+            }
+        }
+        function phIdentify(userId, props) {
+            if (window._phReady && window.posthog) {
+                posthog.identify(String(userId), props || {});
+            }
+        }
+        function phReset() {
+            if (window._phReady && window.posthog) {
+                posthog.reset();
+            }
+        }
+    </script>
 
     <script>
         let TOKEN = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -1244,8 +2094,10 @@
             try {
                 const d = await req('POST', '/api/auth/login', { username: $('l-user').value, password: $('l-pass').value, remember_me: $('l-rem').checked });
                 TOKEN = d.token; if ($('l-rem').checked) localStorage.setItem('token', TOKEN); else sessionStorage.setItem('token', TOKEN);
+                phIdentify(d.user_id, { email: d.email, username: d.username, tier: d.tier, login_count: d.login_count });
+                phTrack('user_logged_in_client', { username: d.username, remember_me: $('l-rem').checked });
                 init();
-            } catch (e) { $('l-msg').innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
+            } catch (e) { phTrack('login_failed_client', { attempted_username: $('l-user').value }); $('l-msg').innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
         }
         async function sendOTP() {
             try {
@@ -1269,7 +2121,10 @@
         async function doRegister() {
             try {
                 const d = await req('POST', '/api/auth/register', { email: regEmail, otp_code: $('r-otp').value, username: $('r-user').value, password: $('r-pass').value });
-                TOKEN = d.token; localStorage.setItem('token', TOKEN); init();
+                TOKEN = d.token; localStorage.setItem('token', TOKEN);
+                phIdentify(d.user_id, { email: d.email, username: d.username, tier: 'Researcher' });
+                phTrack('user_registered_client', { username: d.username, email: d.email });
+                init();
             } catch (e) { $('r-msg').innerHTML = `<div class="alert alert-error">${e.message}</div>`; }
         }
         async function init() {
@@ -1279,6 +2134,10 @@
                 $('app-container').classList.add('active');
                 $('app-container').style.display = 'flex';
                 $('user-name').textContent = USER.username;
+
+                // Identify user in PostHog
+                phIdentify(USER.user_id, { email: USER.email, username: USER.username, tier: USER.tier, login_count: USER.login_count, institution: USER.institution || '' });
+                phTrack('app_initialized', { username: USER.username, tier: USER.tier });
 
                 // Update visibility of topbar buttons - using IDs from the refactor
                 const settingsBtn = $('settings-top-btn');
@@ -1293,7 +2152,7 @@
                 logout();
             }
         }
-        function logout() { TOKEN = null; localStorage.clear(); sessionStorage.clear(); location.reload(); }
+        function logout() { phTrack('user_logged_out'); phReset(); TOKEN = null; localStorage.clear(); sessionStorage.clear(); location.reload(); }
 
         function tab(t) {
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
@@ -1302,6 +2161,7 @@
             if (targetTab) targetTab.classList.add('active');
             $(`t-${t}`).classList.add('active');
             if (t === 'settings') loadProf();
+            phTrack('tab_switched', { tab_name: t });
         }
 
         const MODALITY_STEPS = {
@@ -1441,7 +2301,8 @@
                     $('ana-chat-panel').style.flex = '';
                     $('ana-chat-panel').style.width = '';
                     $('ana-header').classList.add('hidden');
-                    $('chat').innerHTML = '<div class="msg bot">Ready for analysis. Upload multiple files, and I\'ll help you process them all.</div>';
+                    $('chat').innerHTML = '';
+                    msg('bot', 'Ready for analysis. Upload multiple files, and I\'ll help you process them all.');
                     $('s-name').value = '';
                     $('s-cond').value = '';
                     $('s-notes').value = '';
@@ -1476,14 +2337,14 @@
                 let l = '';
                 if (!h.studies.length) l = '<div style="font-size:11px;color:var(--dim);text-align:center;padding:12px;">No saved studies yet.</div>';
                 else h.studies.forEach(s => l += `
-                    <div class="study-item" style="padding:10px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
-                        <div onclick="loadSavedStudy(${s.id})" style="flex:1;">
-                            <div style="font-weight:600; font-size:13px;">${s.name}</div>
-                            <div style="font-size:10px; color:var(--dim);">${s.modality} • ${s.subject_count} subjects</div>
+                    <div class="saved-study-item">
+                        <div class="saved-study-name" onclick="loadSavedStudy(${s.id})" style="cursor:pointer;">
+                            <div style="font-weight:600;font-size:12px;">${s.name}</div>
+                            <div style="font-size:10px;color:var(--dim);">${s.modality} • ${s.subject_count} subjects</div>
                         </div>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <div style="font-size:10px; color:var(--dim);">${new Date(s.created_at).toLocaleDateString()}</div>
-                            <button onclick="deleteStudy(${s.id})" style="background:var(--red);color:#fff;border:none;border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer;">Delete</button>
+                        <div class="saved-study-actions">
+                            <div style="font-size:10px;color:var(--dim);white-space:nowrap;">${new Date(s.created_at).toLocaleDateString()}</div>
+                            <button onclick="deleteStudy(${s.id})" class="btn btn-sm" style="background:var(--red);color:#fff;border:none;">Delete</button>
                         </div>
                     </div>
                 `);
@@ -1505,19 +2366,93 @@
 
         async function loadSavedStudy(id) {
             try {
-                const res = await req('POST', `/api/study/load/${id}`);
-                await loadSession();
-                updateAnaHeader(res.study);
+                // Step 1: Load study on backend (restores subjects from files_json)
+                const loadRes = await req('POST', `/api/study/load/${id}`);
+                const study = loadRes.study;
 
+                // Step 2: Fetch full session so we get subjects with preview + channel_names
+                const sessionRes = await req('GET', '/api/study/session');
+
+                // Step 3: Populate uploadedSubjects
+                if (sessionRes.subjects && sessionRes.subjects.length) {
+                    uploadedSubjects = sessionRes.subjects;
+                    $('up-txt').textContent = `${uploadedSubjects.length} subject(s) loaded`;
+                    const sel = $('s-subj');
+                    sel.innerHTML = uploadedSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                    $('subj-sel-container').classList.remove('hidden');
+                    const btn = $('btn-init');
+                    if (btn) btn.disabled = false;
+                } else {
+                    $('up-txt').textContent = 'No files found for this study.';
+                }
+
+                // Step 4: Restore form fields from study context
+                if (study) {
+                    $('s-name').value = study.name || '';
+                    $('s-mod').value = study.modality || 'EEG';
+                    $('s-count').value = study.n_subjects || uploadedSubjects.length || 1;
+                    $('s-sfreq').value = study.sfreq || 256;
+                    $('s-ref').value = study.reference || 'average';
+                    $('s-cond').value = study.conditions || '';
+                    $('s-notes').value = study.notes || '';
+
+                    // Restore montage
+                    if (study.montage && study.montage.length) {
+                        selectedMontage = [...study.montage];
+                        setTimeout(() => {
+                            selectedMontage.forEach(name => {
+                                if (name) {
+                                    const el = document.getElementById(`el-${name}`);
+                                    if (el) el.classList.add('selected');
+                                }
+                            });
+                        }, 400);
+                    }
+
+                    updateAnaHeader(study);
+                    studyReady = true;
+                }
+
+                // Step 5: Show panels and render channel mapping
                 $('sub-list-container').classList.remove('hidden');
                 $('study-form-container').classList.remove('hidden');
+                renderSubjectList();
+                renderMappingList();
 
-                $('up-status').innerHTML = `<div class="alert alert-success" style="padding:10px;">✓ Study "${res.study.name}" loaded. Review details and click "Initialize Analysis" to proceed.</div>`;
+                // Step 6: Render the plot
+                if (uploadedSubjects.length) {
+                    setTimeout(switchSubject, 300);
+                }
 
-                // Restore chat history and switch to analysis tab
+                $('up-status').innerHTML = `<div class="alert alert-success" style="padding:10px;">
+                    ✓ Study "${study ? study.name : 'Unknown'}" loaded — ${uploadedSubjects.length} subject(s).
+                    ${uploadedSubjects.length === 0 ? '<br><span style="color:var(--yellow)">⚠ Original EEG files may have been moved or deleted.</span>' : ''}
+                </div>`;
+
+                // Step 7: Auto-save context so the chatbot immediately knows about this data
+                if (uploadedSubjects.length && study) {
+                    try {
+                        await req('POST', '/api/study/create', {
+                            name: study.name || $('s-name').value,
+                            modality: study.modality || $('s-mod').value,
+                            subject_count: uploadedSubjects.length,
+                            sfreq: study.sfreq || parseFloat($('s-sfreq').value),
+                            reference: study.reference || $('s-ref').value,
+                            conditions: study.conditions || $('s-cond').value,
+                            notes: study.notes || $('s-notes').value,
+                            montage: selectedMontage,
+                            events: eventsFileData
+                        });
+                        studyReady = true;
+                    } catch (e) {
+                        console.warn('Auto-context save failed:', e.message);
+                    }
+                }
+
+                // Step 8: Restore chat and switch to analysis tab
                 await restoreChat();
                 tab('analysis');
-            } catch (e) { alert(e.message); }
+            } catch (e) { alert('Failed to load study: ' + e.message); }
         }
 
         function updateAnaHeader(ctx) {
@@ -1536,6 +2471,7 @@
             for (let f of i.files) fd.append('files', f);
 
             try {
+                phTrack('file_upload_started', { n_files: i.files.length });
                 const res = await fetch('/api/study/upload', { method: 'POST', headers: authHeadersNoJSON(), body: fd });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail);
@@ -1543,6 +2479,7 @@
                 // Incremental: merge new subjects with existing ones
                 uploadedSubjects = [...uploadedSubjects, ...data.subjects];
                 $('up-txt').textContent = `${uploadedSubjects.length} total subjects loaded`;
+                phTrack('file_upload_success', { n_files: data.subjects.length, total_subjects: uploadedSubjects.length });
 
                 // Update subject selector
                 const sel = $('s-subj');
@@ -1590,19 +2527,44 @@
         }
 
         async function deleteSubject(id) {
+            if (!confirm('Are you sure you want to delete this subject data?')) return;
             try {
                 await req('DELETE', `/api/study/subject/${id}`);
-                uploadedSubjects = uploadedSubjects.filter(s => s.id !== id);
-                renderSubjectList();
-                if (uploadedSubjects.length) switchSubject();
-                else {
-                    plotDataState.subjectId = null;
-                    $('plot-prev').innerHTML = 'Waiting for data...';
-                    $('plot-nav').classList.add('hidden');
-                    $('plot-range-label').textContent = '';
-                    $('info-prev').textContent = 'No file loaded.';
+                const idx = uploadedSubjects.findIndex(s => s.id === id);
+                if (idx !== -1) uploadedSubjects.splice(idx, 1);
+                renderMappingList();
+                if ($('s-subj').value == id) {
+                    $('s-subj').innerHTML = uploadedSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                    switchSubject();
                 }
             } catch (e) { alert(e.message); }
+        }
+
+        async function deleteChannel(idx) {
+            const subjId = parseInt($('s-subj').value);
+            const subj = uploadedSubjects.find(s => s.id === subjId);
+            if (!subj) return;
+
+            const chName = (subj.info.channel_names && subj.info.channel_names[idx]) || `Channel ${idx + 1}`;
+            if (!confirm(`Are you sure you want to drop channel "${chName}" from this recording?`)) return;
+
+            try {
+                const res = await req('DELETE', `/api/study/subject/${subjId}/channel/${idx}`);
+
+                // Update local state
+                subj.info.n_channels = res.n_channels;
+                // We need to re-fetch the subject info or just update locally
+                // Easier to just re-sync the mapping list size
+                if (selectedMontage.length > idx) {
+                    selectedMontage.splice(idx, 1);
+                }
+
+                // Refresh everything
+                await switchSubject();
+                console.log(res.message);
+            } catch (e) {
+                alert('Failed to delete channel: ' + e.message);
+            }
         }
 
         async function clearStudy() {
@@ -1695,7 +2657,11 @@
             if (uploadedSubjects.length > 0) switchSubject();
         }
 
+        // Current montage channel count for adaptive rendering
+        let _montageN = 256;
+
         function renderMontage(n = 256) {
+            _montageN = n;
             const group = $('electrode-group');
             if (!group) return;
             group.innerHTML = '';
@@ -1709,20 +2675,136 @@
 
             names.forEach(name => {
                 const pos = coords[name];
-                if (pos) addElectrode(pos.x, pos.y, name);
+                if (pos) addElectrode(pos.x, pos.y, name, n);
             });
         }
 
-        function addElectrode(x, y, name) {
+        function addElectrode(x, y, name, n) {
+            n = n || _montageN;
             const group = $('electrode-group');
+
+            // Adaptive sizing by density
+            let r, fontSize, labelClass, labelOffsetY;
+            if (n >= 128) {
+                r = 0.7; fontSize = 1.4; labelClass = 'electrode-label micro'; labelOffsetY = 0;
+            } else if (n >= 64) {
+                r = 1.2; fontSize = 2.2; labelClass = 'electrode-label'; labelOffsetY = 0.3;
+            } else if (n >= 32) {
+                r = 1.5; fontSize = 2.6; labelClass = 'electrode-label'; labelOffsetY = 0.4;
+            } else {
+                r = 1.8; fontSize = 3.0; labelClass = 'electrode-label'; labelOffsetY = 0.5;
+            }
+
             const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", "1.6");
+            c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
             c.setAttribute("class", "electrode"); c.setAttribute("id", `el-${name}`);
             c.onclick = () => toggleElectrode(name);
+
+            // Tooltip on hover
+            const tt = $('montage-tooltip');
+            c.addEventListener('mouseenter', (e) => {
+                tt.textContent = name + (c.classList.contains('selected') ? ' ✓' : '');
+                tt.style.display = 'block';
+                tt.style.left = (e.clientX + 12) + 'px';
+                tt.style.top = (e.clientY - 8) + 'px';
+            });
+            c.addEventListener('mousemove', (e) => {
+                tt.style.left = (e.clientX + 12) + 'px';
+                tt.style.top = (e.clientY - 8) + 'px';
+            });
+            c.addEventListener('mouseleave', () => { tt.style.display = 'none'; });
+
+            group.appendChild(c);
+
+            // Labels: always shown, sized by density
+            // Dense (>=128): label centered on dot, numeric only (E23 → "23")
+            // Sparse (<128): label below dot, full name (Cz, Fp1, etc.)
+            const labelText = n >= 128 ? name.replace(/^[A-Za-z]+/, '') || name : name;
             const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            t.setAttribute("x", x); t.setAttribute("y", y + 0.6); t.setAttribute("class", "electrode-label");
-            t.textContent = name;
-            group.appendChild(c); group.appendChild(t);
+            t.setAttribute("x", x);
+            if (n >= 128) {
+                // Centered on the dot — text sits right inside/over the circle
+                t.setAttribute("y", String(y));
+                t.setAttribute("dominant-baseline", "central");
+            } else {
+                // Below the dot — easier to read for sparse layouts
+                t.setAttribute("y", String(y + r + labelOffsetY + fontSize * 0.5));
+            }
+            t.setAttribute("class", labelClass);
+            t.setAttribute("font-size", fontSize);
+            t.setAttribute("id", `lbl-${name}`);
+            t.textContent = labelText;
+            group.appendChild(t);
+        }
+
+        function importMontageFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const text = e.target.result;
+                const ext = file.name.split('.').pop().toLowerCase();
+                let parsed = [];
+
+                if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
+                    const sep = ext === 'tsv' ? '\t' : ',';
+                    const lines = text.trim().split('\n');
+                    // Try to find name column (first non-numeric col)
+                    lines.forEach(line => {
+                        const cols = line.split(sep).map(c => c.trim()).filter(Boolean);
+                        if (cols.length >= 1) {
+                            const name = cols[0].replace(/"/g, '');
+                            if (name && isNaN(name)) parsed.push(name);
+                        }
+                    });
+                } else if (ext === 'sfp' || ext === 'xyz') {
+                    // Format: name x y z
+                    text.split('\n').forEach(line => {
+                        const parts = line.trim().split(/\s+/);
+                        if (parts.length >= 4) parsed.push(parts[0]);
+                    });
+                } else if (ext === 'elp') {
+                    // BESA .elp: lines with % name or theta phi name
+                    text.split('\n').forEach(line => {
+                        const m = line.match(/\b([A-Za-z][A-Za-z0-9_]+)\b/);
+                        if (m && !['theta', 'phi', 'ELEC'].includes(m[1])) parsed.push(m[1]);
+                    });
+                } else if (ext === 'loc' || ext === 'locs' || ext === 'ced') {
+                    // EEGLAB .loc: num theta radius name
+                    text.split('\n').forEach(line => {
+                        const parts = line.trim().split(/\s+/);
+                        if (parts.length >= 4) parsed.push(parts[3]);
+                    });
+                } else {
+                    // Generic: extract first word-token per line that looks like a channel name
+                    text.split('\n').forEach(line => {
+                        const m = line.trim().match(/^([A-Za-z][A-Za-z0-9_]{0,9})/);
+                        if (m) parsed.push(m[1]);
+                    });
+                }
+
+                if (parsed.length === 0) {
+                    alert('Could not parse channel names from file. Supported: .sfp, .elp, .xyz, .csv, .tsv, .loc/.locs, .ced, .txt');
+                    input.value = '';
+                    return;
+                }
+
+                // Apply parsed names as selectedMontage
+                clearMontage();
+                const n = selectedMontage.length || parsed.length;
+                while (selectedMontage.length < n) selectedMontage.push('');
+                parsed.slice(0, n).forEach((name, i) => {
+                    selectedMontage[i] = name;
+                    const el = document.getElementById(`el-${name}`);
+                    if (el) el.classList.add('selected');
+                });
+
+                updateMontageUI();
+                renderMappingList();
+                if (uploadedSubjects.length > 0) switchSubject();
+                input.value = '';
+            };
+            reader.readAsText(file);
         }
         function toggleElectrode(name) {
             const el = document.getElementById(`el-${name}`);
@@ -1762,8 +2844,9 @@
                 const val = selectedMontage[i] || "";
                 h += `
                 <div class="mapping-row">
-                    <div class="mapping-label">Ch ${i + 1}</div>
+                    <div class="mapping-label" title="${val || 'Unmapped'}">Ch ${i + 1}</div>
                     <input class="mapping-input" placeholder="e.g. Cz" value="${val}" onkeyup="onMappingKey(${i}, event)" onblur="onMappingBlur(${i}, this.value)">
+                    <button class="mapping-del-btn" onclick="deleteChannel(${i})" title="Delete this channel">×</button>
                 </div>`;
             }
             container.innerHTML = h;
@@ -1799,6 +2882,39 @@
             const n = (uploadedSubjects[0] && uploadedSubjects[0].info) ? uploadedSubjects[0].info.n_channels : 0;
             const mappedCount = selectedMontage.filter(m => !!m).length;
             $('montage-count').innerText = `${mappedCount} / ${n || 256} Mapped`;
+        }
+
+        // ── Events / Stimulus file ──
+        let eventsFileData = null;
+
+        function onEventsFileSelected(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                eventsFileData = { name: file.name, size: file.size, content: e.target.result };
+                $('events-file-display').textContent = file.name;
+                $('events-file-display').style.color = 'var(--text)';
+                $('events-file-clear').classList.remove('hidden');
+                $('events-file-info').style.display = 'block';
+            };
+            // Read as text for text-based formats; binary for .fif/.mat etc.
+            const binaryExts = ['fif', 'mat', 'edf', 'bdf', 'gdf'];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (binaryExts.includes(ext)) {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
+
+        function clearEventsFile() {
+            eventsFileData = null;
+            $('events-file-display').textContent = 'No file selected';
+            $('events-file-display').style.color = 'var(--dim)';
+            $('events-file-clear').classList.add('hidden');
+            $('events-file-info').style.display = 'none';
+            $('events-file-input').value = '';
         }
         function selectAllElectrodes() {
             const n = (uploadedSubjects[0] && uploadedSubjects[0].info) ? uploadedSubjects[0].info.n_channels : 0;
@@ -1845,23 +2961,43 @@
             if (el && s.totalDuration > 0) el.textContent = `${s.tmin.toFixed(1)}s – ${s.tmax.toFixed(1)}s of ${s.totalDuration.toFixed(1)}s`;
         }
         function renderPlot(data) {
+            const nChannels = data.channels.length;
+            // 40 pixels per channel, but at least 400
+            const dynamicHeight = Math.max(400, nChannels * 40);
+            $('plot-prev').style.height = `${dynamicHeight}px`;
+
             const traces = data.channels.map((ch, i) => {
                 const label = (selectedMontage[i] && selectedMontage[i].trim()) ? selectedMontage[i] : ch.name;
                 return {
                     x: data.times, y: ch.data, name: label,
-                    type: 'scatter', mode: 'lines', line: { width: 1, color: '#00f2fe' }
+                    type: 'scatter', mode: 'lines', line: { width: 1, color: '#00f2fe' },
+                    hoverinfo: 'none'
                 };
             });
             // Build y-axis tick positions and labels from montage selections
             const tickvals = data.channels.map(ch => ch.offset);
             const ticktext = data.channels.map((ch, i) => (selectedMontage[i] && selectedMontage[i].trim()) ? selectedMontage[i] : ch.name);
-            $('plot-prev').innerHTML = '';
+
             Plotly.newPlot('plot-prev', traces, {
-                margin: { t: 10, b: 30, l: 60, r: 10 },
+                height: dynamicHeight,
+                margin: { t: 20, b: 40, l: 80, r: 20 },
                 paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
                 showlegend: false,
-                xaxis: { range: [data.tmin, data.tmax], gridcolor: '#1e293b', tickcolor: '#444', font: { color: '#64748b', size: 10 }, title: 'Time (s)' },
-                yaxis: { tickvals: tickvals, ticktext: ticktext, gridcolor: '#1e293b', tickcolor: '#444', font: { color: '#64748b', size: 9 } }
+                xaxis: {
+                    range: [data.tmin, data.tmax],
+                    gridcolor: '#1e293b',
+                    tickcolor: '#444',
+                    title: 'Time (s)',
+                    font: { color: '#64748b', size: 11 }
+                },
+                yaxis: {
+                    tickvals: tickvals,
+                    ticktext: ticktext,
+                    gridcolor: '#1e293b',
+                    tickcolor: '#444',
+                    fixedrange: true,
+                    font: { color: '#cbd5e1', size: 10 }
+                }
             }, { responsive: true, displayModeBar: false });
         }
         async function loadPlotChunk(tmin) {
@@ -1907,6 +3043,17 @@
         }
 
         async function createStudy(initAnalysis = false) {
+            // Flush any pending mapping-input values that haven't been blurred yet
+            document.querySelectorAll('.mapping-input').forEach((input, i) => {
+                const v = input.value.trim();
+                if (i < selectedMontage.length) {
+                    selectedMontage[i] = v;
+                } else {
+                    while (selectedMontage.length <= i) selectedMontage.push('');
+                    selectedMontage[i] = v;
+                }
+            });
+
             const body = {
                 name: $('s-name').value,
                 modality: $('s-mod').value,
@@ -1915,7 +3062,8 @@
                 reference: $('s-ref').value,
                 conditions: $('s-cond').value,
                 notes: $('s-notes').value,
-                montage: selectedMontage
+                montage: selectedMontage,
+                events: eventsFileData
             };
             try {
                 const d = await req('POST', '/api/study/create', body);
@@ -1951,6 +3099,9 @@
                 if (res.messages && res.messages.length) {
                     $('chat').innerHTML = '';
                     res.messages.forEach(m => msg(m.role === 'assistant' ? 'bot' : 'user', m.content));
+                } else {
+                    $('chat').innerHTML = '';
+                    msg('bot', 'Ready for analysis. Upload EEG files and click **Initialize** to begin.');
                 }
                 // Restore pipeline panel if there are pending steps
                 if (res.pending_steps && res.pending_steps.length > 0) {
@@ -1958,6 +3109,7 @@
                 }
             } catch (e) {
                 console.warn('Failed to restore chat history:', e);
+                msg('bot', 'Ready for analysis. Upload EEG files and click **Initialize** to begin.');
             }
         }
 
@@ -1966,46 +3118,88 @@
             const model = $('chat-model') ? $('chat-model').value : 'claude';
 
             if (model.startsWith('kilo-')) {
-                msg('bot', 'Kilo models are currently under construction. Please use Claude (Anthropic) for now.');
+                msg('bot', 'Kilo models are currently under construction. Please use Claude (Anthropic) for now.', { model });
                 return;
             }
 
             $('chat-in').value = ''; msg('user', text);
 
             if (!studyReady) {
-                msg('bot', 'No study initialized yet. Please upload EEG files and click "Initialize" so I can access your dataset context.');
+                msg('bot', 'No study initialized yet. Please upload EEG files and click "Initialize" so I can access your dataset context.', { model: model });
                 return;
             }
 
-            // Show thinking + stop button, hide send button
+            // Show thinking indicator + stop button
             $('thinking').classList.remove('hidden');
             $('btn-send').classList.add('hidden');
             $('btn-stop').classList.remove('hidden');
             chatAbortController = new AbortController();
 
-            try {
-                const res = await req('POST', '/api/ai/chat', { message: text, model: model }, chatAbortController.signal);
+            // Live streaming bubble — shows response as it arrives
+            const modelVal = $('chat-model') ? $('chat-model').value : 'claude';
+            const liveBubble = _createLiveBubble(modelVal);
 
-                if (res.type === 'pipeline') {
-                    const steps = res.pipeline_steps || [];
-                    const displayMsg = res.message || res.understanding || 'Pipeline generated.';
-                    msg('bot', displayMsg);
-                    if (steps.length > 0) {
-                        tab('analysis');
-                        showPipe(steps);
-                    } else {
-                        msg('bot', 'Pipeline response received but no steps were generated. Please try rephrasing your request.');
+            try {
+                const response = await fetch('/api/ai/chat/stream', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, model: modelVal }),
+                    signal: chatAbortController.signal,
+                });
+
+                if (response.status === 401) { logout(); throw new Error('Session expired'); }
+                if (!response.ok) {
+                    const d = await response.json().catch(() => ({}));
+                    throw new Error(d.detail || `HTTP ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let accText = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split('\n\n');
+                    buffer = events.pop();
+                    for (const evt of events) {
+                        if (!evt.startsWith('data: ')) continue;
+                        let data;
+                        try { data = JSON.parse(evt.slice(6)); } catch { continue; }
+
+                        if (data.type === 'chunk') {
+                            accText += data.text;
+                            _updateLiveBubble(liveBubble, accText);
+                        } else if (data.type === 'done') {
+                            liveBubble.remove();
+                            const res = data.response || {};
+                            if (res.type === 'pipeline') {
+                                const steps = res.pipeline_steps || [];
+                                const displayMsg = res.message || res.understanding || 'Pipeline ready.';
+                                if (steps.length > 0) {
+                                    msg('bot', displayMsg, { steps, model: modelVal });
+                                    tab('analysis');
+                                    showPipe(steps);
+                                } else {
+                                    msg('bot', res.message || 'Pipeline response with no steps. Try rephrasing.', { model: modelVal });
+                                }
+                            } else {
+                                msg('bot', res.message || res.clarification_question || JSON.stringify(res), { model: modelVal });
+                            }
+                        } else if (data.type === 'error') {
+                            liveBubble.remove();
+                            msg('bot', 'Error: ' + (data.message || 'Unknown error'), { model: modelVal });
+                        }
                     }
                 }
-                else if (res.type === 'answer' || res.type === 'interpretation') msg('bot', res.message);
-                else if (res.type === 'clarification' || res.type === 'refusal') msg('bot', res.message || res.clarification_question || 'Please clarify your request.');
-                else if (res.type === 'error') msg('bot', 'Error: ' + res.message);
-                else msg('bot', res.message || JSON.stringify(res));
             } catch (e) {
+                liveBubble.remove();
                 if (e.name === 'AbortError') {
-                    msg('bot', 'Request stopped.');
+                    msg('bot', 'Response stopped.', { model: modelVal });
                 } else {
-                    msg('bot', 'Error: ' + e.message);
+                    msg('bot', 'Error: ' + e.message, { model: modelVal });
                 }
             } finally {
                 $('thinking').classList.add('hidden');
@@ -2014,17 +3208,186 @@
                 chatAbortController = null;
             }
         }
+
         function stopChat() {
-            if (chatAbortController) {
-                chatAbortController.abort();
-            }
+            if (chatAbortController) chatAbortController.abort();
         }
-        function msg(r, t) {
+
+        // ── Streaming bubble helpers ─────────────────────────────────────────
+        function _modelLabel(model) {
+            return model === 'claude' ? 'claude-sonnet-4-6' : (model || 'claude-sonnet-4-6');
+        }
+
+        function _createLiveBubble(model) {
             const el = document.createElement('div');
-            el.className = 'msg ' + r;
-            el.textContent = t;
+            el.className = 'msg';
+            el.innerHTML = `
+            <div class="agent-card">
+                <div class="agent-card-header">
+                    <div class="agent-card-header-left">
+                        <svg class="agent-bot-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <rect x="3" y="11" width="18" height="10" rx="2"/>
+                            <circle cx="8.5" cy="16" r="1.5"/><circle cx="15.5" cy="16" r="1.5"/>
+                            <path d="M8 11V7a4 4 0 0 1 8 0v4"/><line x1="12" y1="3" x2="12" y2="7"/>
+                        </svg>
+                        <span class="agent-name">CortexIQ</span>
+                        <span class="agent-badge">${_modelLabel(model)}</span>
+                        <span class="streaming-indicator">thinking…</span>
+                    </div>
+                </div>
+                <div class="agent-card-body" id="_live_body" style="min-height:32px;color:var(--dim);font-style:italic;font-size:12px;"></div>
+            </div>`;
             $('chat').appendChild(el);
             $('chat').scrollTop = $('chat').scrollHeight;
+            return el;
+        }
+
+        function _updateLiveBubble(el, rawText) {
+            const body = el.querySelector('#_live_body');
+            if (!body) return;
+            const msg = _extractPartialMessage(rawText) || '';
+            if (msg) {
+                body.innerHTML = _fmtMd(msg) + '<span class="typing-cursor">▌</span>';
+                body.style.fontStyle = '';
+                body.style.color = '';
+                // Remove "thinking…" label once text starts flowing
+                const ind = el.querySelector('.streaming-indicator');
+                if (ind) ind.remove();
+            }
+            $('chat').scrollTop = $('chat').scrollHeight;
+        }
+
+        function _extractPartialMessage(raw) {
+            // Pull the "message" field value out of partial JSON text
+            const m = raw.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)/);
+            if (!m) return null;
+            return m[1]
+                .replace(/\\n/g, '\n').replace(/\\t/g, '\t')
+                .replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        }
+
+        // ── Message renderer ─────────────────────────────────────────────────
+        function _fmtMd(t) {
+            // Simple markdown → HTML (bold, inline code, line breaks)
+            return t
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`([^`\n]+)`/g, '<code style="font-family:var(--mono);font-size:11px;background:var(--border);padding:1px 5px;border-radius:3px;">$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function _renderStepAccordion(steps, idPrefix) {
+            let h = `<div class="agent-steps-label">Pipeline &mdash; ${steps.length} step${steps.length !== 1 ? 's' : ''}</div>`;
+            h += `<div class="agent-accordion">`;
+            steps.forEach((s, i) => {
+                const uid = `${idPrefix}-${i}`;
+                const name = (s.name || s.tool || `Step ${i + 1}`).replace(/</g, '&lt;');
+                const when = (s.when_to_use || '').replace(/</g, '&lt;');
+
+                // Build content sections
+                let content = '';
+
+                if (s.why) {
+                    content += `<div class="step-section">
+                        <div class="step-section-label">Why this step?</div>
+                        <div class="step-section-body">${_fmtMd(s.why)}</div>
+                    </div>`;
+                }
+                if (s.explanation) {
+                    content += `<div class="step-section">
+                        <div class="step-section-label">What it does</div>
+                        <div class="step-section-body">${_fmtMd(s.explanation)}</div>
+                    </div>`;
+                }
+                if (s.python_code) {
+                    const code = s.python_code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    content += `<div class="step-section">
+                        <div class="step-section-label">Code <span class="step-tag">${(s.tool || 'MNE').replace(/</g, '&lt;')}</span></div>
+                        <div class="step-code-block-inline">${code}</div>
+                    </div>`;
+                }
+                if (s.code_explanation) {
+                    content += `<div class="step-section">
+                        <div class="step-section-label">Code walkthrough</div>
+                        <div class="step-section-body">${_fmtMd(s.code_explanation)}</div>
+                    </div>`;
+                }
+                if (s.what_to_expect) {
+                    content += `<div class="step-section">
+                        <div class="step-section-label">What to expect after</div>
+                        <div class="step-section-body">${_fmtMd(s.what_to_expect)}</div>
+                    </div>`;
+                }
+                if (s.when_to_use) {
+                    content += `<div class="step-section">
+                        <div class="step-section-label">When to use / skip</div>
+                        <div class="step-section-body">${_fmtMd(s.when_to_use)}</div>
+                    </div>`;
+                }
+                // Fallback: parameters JSON
+                if (!content && s.parameters) {
+                    content = `<div class="step-section"><div class="step-code-block-inline">${JSON.stringify(s.parameters, null, 2).replace(/</g, '&lt;')}</div></div>`;
+                }
+
+                h += `
+                <div class="agent-accordion-item" id="${uid}">
+                    <button class="agent-accordion-trigger" onclick="toggleAcc('${uid}')">
+                        <span class="agent-accordion-trigger-left">
+                            <span class="agent-step-num">${i + 1}</span>
+                            <span style="font-weight:600;">${name}</span>
+                            ${when ? `<span style="color:var(--dim);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">&nbsp;— ${when.slice(0, 60)}${when.length > 60 ? '…' : ''}</span>` : ''}
+                        </span>
+                        <svg class="agent-accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="agent-accordion-content">${content}</div>
+                </div>`;
+            });
+            h += `</div>`;
+            return h;
+        }
+
+        let _msgCounter = 0;
+        function msg(r, t, opts) {
+            opts = opts || {};
+            const el = document.createElement('div');
+            if (r === 'user') {
+                el.className = 'msg user';
+                el.textContent = t;
+            } else {
+                const label = _modelLabel(opts.model);
+                const steps = opts.steps || [];
+                const msgId = `msg-${++_msgCounter}`;
+                let bodyHtml = '';
+
+                if (steps.length > 0) {
+                    bodyHtml = `<div style="margin-bottom:10px;line-height:1.6;">${_fmtMd(t)}</div>`;
+                    bodyHtml += _renderStepAccordion(steps, msgId);
+                } else {
+                    bodyHtml = _fmtMd(t);
+                }
+
+                el.innerHTML = `
+                <div class="agent-card">
+                    <div class="agent-card-header">
+                        <div class="agent-card-header-left">
+                            <svg class="agent-bot-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <rect x="3" y="11" width="18" height="10" rx="2"/>
+                                <circle cx="8.5" cy="16" r="1.5"/><circle cx="15.5" cy="16" r="1.5"/>
+                                <path d="M8 11V7a4 4 0 0 1 8 0v4"/><line x1="12" y1="3" x2="12" y2="7"/>
+                            </svg>
+                            <span class="agent-name">CortexIQ</span>
+                            <span class="agent-badge">${label}</span>
+                        </div>
+                    </div>
+                    <div class="agent-card-body">${bodyHtml}</div>
+                </div>`;
+            }
+            $('chat').appendChild(el);
+            $('chat').scrollTop = $('chat').scrollHeight;
+        }
+
+        function toggleAcc(id) {
+            document.getElementById(id).classList.toggle('open');
         }
         let pipeInterval = null;
         let studyReady = false; // true once study is created or loaded
@@ -2197,19 +3560,18 @@
         let generateCount = 0;
         // Helper to build a styled table from headers and rows
         function buildTable(headers, rows, colStyles = {}) {
-            let h = `<table style="width:100%;font-size:10px;border-collapse:collapse;">`;
-            h += `<thead><tr style="background:var(--accent);">`;
+            let h = `<table class="res-table">`;
+            h += `<thead><tr>`;
             headers.forEach((hdr, i) => {
                 const align = colStyles[i] && colStyles[i].align ? colStyles[i].align : 'left';
-                h += `<th style="padding:6px 10px;text-align:${align};color:white;font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;">${hdr}</th>`;
+                h += `<th style="text-align:${align};">${hdr}</th>`;
             });
             h += `</tr></thead><tbody>`;
             rows.forEach((row, ri) => {
-                const bg = ri % 2 === 0 ? 'var(--card)' : 'var(--input)';
-                h += `<tr style="background:${bg};">`;
+                h += `<tr class="${ri % 2 === 0 ? 'rt-even' : 'rt-odd'}">`;
                 row.forEach((cell, ci) => {
                     const align = colStyles[ci] && colStyles[ci].align ? colStyles[ci].align : 'left';
-                    h += `<td style="padding:5px 10px;text-align:${align};color:var(--text);border-bottom:1px solid var(--border);white-space:nowrap;">${cell}</td>`;
+                    h += `<td style="text-align:${align};">${cell}</td>`;
                 });
                 h += `</tr>`;
             });
@@ -2223,7 +3585,9 @@
             btn.disabled = true;
             $('gen-status').textContent = '';
             try {
+                phTrack('results_generate_started_client');
                 const d = await req('POST', '/api/results/generate');
+                phTrack('results_generate_success_client');
                 generateCount++;
                 $('res-area').classList.remove('hidden');
 
@@ -2248,10 +3612,12 @@
                     $('res-ch-desc').classList.remove('hidden');
                     const headers = ['Channel', 'Mean (µV)', 'Std (µV)', 'Min (µV)', 'Max (µV)', 'Median (µV)', 'IQR (µV)', 'Skew', 'Kurt', 'RMS (µV)'];
                     const colStyles = { 0: { align: 'left' }, 1: { align: 'right' }, 2: { align: 'right' }, 3: { align: 'right' }, 4: { align: 'right' }, 5: { align: 'right' }, 6: { align: 'right' }, 7: { align: 'right' }, 8: { align: 'right' }, 9: { align: 'right' } };
+                    // Safe formatter — handles null/nan from backend
+                    const fmt = (v, digits = 2) => (v == null || isNaN(v)) ? 'N/A' : Number(v).toFixed(digits);
                     const rows = chDesc.map(ch => [
-                        ch.channel, ch.mean_uV.toFixed(2), ch.std_uV.toFixed(2), ch.min_uV.toFixed(2),
-                        ch.max_uV.toFixed(2), ch.median_uV.toFixed(2), ch.iqr_uV.toFixed(2),
-                        ch.skewness.toFixed(3), ch.kurtosis.toFixed(3), ch.rms_uV.toFixed(2)
+                        ch.channel, fmt(ch.mean_uV), fmt(ch.std_uV), fmt(ch.min_uV),
+                        fmt(ch.max_uV), fmt(ch.median_uV), fmt(ch.iqr_uV),
+                        fmt(ch.skewness, 3), fmt(ch.kurtosis, 3), fmt(ch.rms_uV)
                     ]);
                     $('res-ch-desc-body').innerHTML = buildTable(headers, rows, colStyles);
                 } else {
@@ -2306,7 +3672,11 @@
                 const corr = stats.descriptive && stats.descriptive.cross_channel_correlation;
                 if (corr && corr.mean_r !== undefined) {
                     $('res-corr-section').classList.remove('hidden');
-                    $('res-corr-body').innerHTML = `<div style="padding:10px;font-size:11px;color:var(--text);">Mean Pearson r = <strong>${corr.mean_r.toFixed(4)}</strong> (${corr.channels ? corr.channels.length : 0} channels)</div>`;
+                    let corrHtml = `<div style="padding:12px;font-size:11px;color:var(--text);">`;
+                    corrHtml += `<div style="margin-bottom:6px;">Mean Pearson <i>r</i> = <strong>${corr.mean_r.toFixed(4)}</strong> (${corr.channels ? corr.channels.length : 0} channels)</div>`;
+                    if (corr.min_r !== undefined) corrHtml += `<div style="font-size:10px;color:var(--dim);">Range: <i>r</i><sub>min</sub> = ${corr.min_r.toFixed(4)}, <i>r</i><sub>max</sub> = ${corr.max_r.toFixed(4)}</div>`;
+                    corrHtml += `</div>`;
+                    $('res-corr-body').innerHTML = corrHtml;
                 } else {
                     $('res-corr-section').classList.add('hidden');
                 }
@@ -2354,7 +3724,7 @@
                 if (d.figures && Object.keys(d.figures).length) {
                     $('res-figures-section').classList.remove('hidden');
                     let figHtml = '';
-                    const figLabels = { psd: 'Power Spectral Density', erp: 'ERP Butterfly Plot', ica: 'ICA Components' };
+                    const figLabels = { psd: 'Power Spectral Density', erp: 'ERP Butterfly Plot', ica: 'ICA Components', topomap: 'Topographic Band Power Map' };
                     Object.entries(d.figures).forEach(([k, v]) => {
                         figHtml += `<div style="background:var(--input);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
                             <div style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--accent);border-bottom:1px solid var(--border);">${figLabels[k] || k.toUpperCase()}</div>
@@ -2419,6 +3789,7 @@
             localStorage.setItem('theme', next);
             const btn = $('theme-toggle');
             if (btn) btn.textContent = next === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+            phTrack('theme_toggled', { theme: next });
         }
         // Restore theme on load
         (function () {
@@ -2430,6 +3801,7 @@
 
         async function downloadResult(filename, type) {
             try {
+                phTrack('result_download_client', { filename, type });
                 const response = await fetch(`/api/results/download/${filename}`, { headers: authHeadersNoJSON() });
                 if (!response.ok) throw new Error('Download failed');
                 const blob = await response.blob();
